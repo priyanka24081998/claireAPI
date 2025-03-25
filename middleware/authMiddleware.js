@@ -2,13 +2,13 @@ const jwt = require('jsonwebtoken');
 
 exports.verifyToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ message: "Unauthorized: No token provided" });
     }  
 
     // 🔥 Extract token from "Bearer <token>"
-    const token = authHeader.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, 'claireDiamonds'); 
