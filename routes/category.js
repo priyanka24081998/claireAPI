@@ -3,6 +3,8 @@ var router = express.Router();
 var CC = require('../controller/categoryController')
 const { verifyToken } = require('../middleware/authMiddleware');
 
+
+
 /* GET users listing. */
 router.get('/', CC.viewCategory);
 router.post('/createCategory',verifyToken, CC.createCategory);

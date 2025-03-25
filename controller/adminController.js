@@ -45,7 +45,8 @@ exports.adminLogin = async (req, res) => {
         }
 
         const token = jwt.sign({ id: admin._id, email: admin.email }, 'claireDiamonds');
-
+        
+        
 
         res.status(200).json({ status: 'success', message: 'Login successful',token:token });
 
