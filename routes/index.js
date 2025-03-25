@@ -1,9 +1,10 @@
 var express = require('express');
 var router = express.Router();
+const AC = require('../controller/adminController');
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
+// ✅ Apply JWT middleware to protect routes
+router.post('/createAdmin', AC.createAdmin);
+router.post('/login', AC.adminLogin);
 
 module.exports = router;
+
