@@ -1,26 +1,15 @@
 const PM = require('../model/productModel');
-const upload = require('../config/multerConfig');
 
 exports.createProduct = async (req, res) => {
-  upload.fields([
-    { name: 'images', maxCount: 10 },
-    { name: 'videos', maxCount: 3 }
-  ])(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({
-        status: 'fail',
-        message: err.message
-      });
-    }
 
     const data = req.body;
 
     if (req.files?.images) {
-      data.images = req.files.images.map(file => `/${file.filename}`);
+      data.images = req.files.images.map(file => `${file.filename}`);
     }
 
     if (req.files?.videos) {
-      data.videos = req.files.videos.map(file => `/${file.filename}`);
+      data.videos = req.files.videos.map(file => `${file.filename}`);
     }
 
     try {
@@ -36,8 +25,8 @@ exports.createProduct = async (req, res) => {
         message: error.message
       });
     }
-  });
-};
+  }
+
 
 
 exports.viewProducts = async (req, res) => {
@@ -109,12 +98,12 @@ exports.viewProducts = async (req, res) => {
   
       // ✅ Save new images if provided
       if (req.files?.images) {
-        data.images = req.files.images.map(file => `/${file.filename}`);
+        data.images = req.files.images.map(file => `${file.filename}`);
       }
   
       // ✅ Save new videos if provided
       if (req.files?.videos) {
-        data.videos = req.files.videos.map(file => `/${file.filename}`);
+        data.videos = req.files.videos.map(file => `${file.filename}`);
       }
   
       const product = await PM.findByIdAndUpdate(id, data, {
