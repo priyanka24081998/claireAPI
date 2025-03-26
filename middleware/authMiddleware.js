@@ -8,8 +8,6 @@ exports.verifyToken = (req, res, next) => {
         return res.status(401).json({ message: "Unauthorized: No token provided" });
     }  
 
-    // 🔥 Extract token from "Bearer <token>"
-
     try {
         const decoded = jwt.verify(token, 'claireDiamonds'); 
         req.user = decoded; 
