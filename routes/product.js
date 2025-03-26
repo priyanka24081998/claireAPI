@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 const PC = require('../controller/productController')
 const multer = require('multer');
-const upload = multer({ dest: '/public/images/' }); 
+const upload = multer({ dest: 'images/' }); 
 const { verifyToken } = require('../middleware/authMiddleware'); 
 
 
