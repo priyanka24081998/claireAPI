@@ -16,11 +16,11 @@ exports.createProduct = async (req, res) => {
     const data = req.body;
 
     if (req.files?.images) {
-      data.images = req.files.images.map(file => `/uploads/${file.filename}`);
+      data.images = req.files.images.map(file => `/images/${file.filename}`);
     }
 
     if (req.files?.videos) {
-      data.videos = req.files.videos.map(file => `/uploads/${file.filename}`);
+      data.videos = req.files.videos.map(file => `/images/${file.filename}`);
     }
 
     try {
@@ -109,12 +109,12 @@ exports.viewProducts = async (req, res) => {
   
       // ✅ Save new images if provided
       if (req.files?.images) {
-        data.images = req.files.images.map(file => `/uploads/${file.filename}`);
+        data.images = req.files.images.map(file => `/images/${file.filename}`);
       }
   
       // ✅ Save new videos if provided
       if (req.files?.videos) {
-        data.videos = req.files.videos.map(file => `/uploads/${file.filename}`);
+        data.videos = req.files.videos.map(file => `/images/${file.filename}`);
       }
   
       const product = await PM.findByIdAndUpdate(id, data, {
