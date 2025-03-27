@@ -21,14 +21,20 @@ const upload = multer({ storage });
 /* GET users listing. */
 router.get('/', PC.viewProducts);
 router.post('/createProduct',
-  upload.fields([
-    { name: 'imageUrl', maxCount: 10 },
-    { name: 'videos', maxCount: 3 }
-  ]),
-  async (req, res) => {
+  upload.array("images", 5), async (req, res) => {
     try {
-      res.json({ imageUrl: req.file.path }); // Cloudinary URL
+      const imageUrls = req.files.map((file) => file.path); // Cloudinary URLs
+  
+      const product = new Product({
+        ...req.body,
+        images: imageUrls, // Save Cloudinary URLs
+      });
+  
+      await product.save();
+  
+      res.status(201).json({ message: "Product created", product });
     } catch (error) {
+      console.error("Error uploading images:", error);
       res.status(500).json({ error: "Image upload failed" });
     }
   },
