@@ -7,42 +7,29 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary"); 
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "products", // Cloudinary folder name
-    allowedFormats: ["jpg", "png", "jpeg", "webp"],
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './public/images')
   },
-});
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  } 
+})
 
-
-const upload = multer({ storage });
+const upload = multer({ storage: storage })
 
 /* GET users listing. */
 router.get('/', PC.viewProducts);
 router.post('/createProduct',
-  upload.array("images", 5), async (req, res) => {
-    try {
-      const imageUrls = req.files.map((file) => file.path); // Cloudinary URLs
-  
-      const product = new Product({
-        ...req.body,
-        images: imageUrls, // Save Cloudinary URLs
-      });
-  
-      await product.save();
-  
-      res.status(201).json({ message: "Product created", product });
-    } catch (error) {
-      console.error("Error uploading images:", error);
-      res.status(500).json({ error: "Image upload failed" });
-    }
-  },
-  verifyToken, PC.createProduct);
+  upload.fields([
+    { name: 'images', maxCount: 10 },
+    { name: 'videos', maxCount: 3 }
+  ]),verifyToken, PC.createProduct);
 router.delete('/deleteProduct/:id',verifyToken, PC.deleteProduct);
 router.patch(
     '/updateProduct/:id',
-    upload.fields([{ name: 'imageUrl' }, { name: 'videos' }]),verifyToken,
+    upload.fields([{ name: 'images' }, { name: 'videos' }]),verifyToken,
     PC.updateProduct
   );
 

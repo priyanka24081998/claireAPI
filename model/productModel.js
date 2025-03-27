@@ -34,7 +34,7 @@ const productSchema = new Schema({
     required:true
   },
 
-  imageUrl: [{
+  images: [{
     type: String 
   }],
   videos: [{
