@@ -4,8 +4,8 @@ exports.createProduct = async (req, res) => {
 
     const data = req.body;
 
-    if (req.files?.images) {
-      data.images = req.files.images.map(file => `${file.filename}`);
+    if (req.files?.imageUrl) {
+      data.imageUrl = req.files.imageUrl.map(file => `${file.filename}`);
     }
 
     if (req.files?.videos) {
@@ -97,8 +97,8 @@ exports.viewProducts = async (req, res) => {
       const data = req.body;
   
       // ✅ Save new images if provided
-      if (req.files?.images) {
-        data.images = req.files.images.map(file => `${file.filename}`);
+      if (req.files?.imageUrl) {
+        data.imageUrl = req.files.imageUrl.map(file => `${file.filename}`);
       }
   
       // ✅ Save new videos if provided

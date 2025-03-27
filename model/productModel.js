@@ -17,12 +17,12 @@ const productSchema = new Schema({
   },
   metal: {
     type: String,
-    enum: ['Gold', 'Silver', 'White Gold', 'Rose Gold'],
+    
     required: true
   },
   diamond :{
     type: String,
-    enum :['Lab Diamond', 'Mossanite','Gemstone']
+    
   },
   weight: {
     type: String, 
@@ -34,7 +34,7 @@ const productSchema = new Schema({
     required:true
   },
 
-  images: [{
+  imageUrl: [{
     type: String 
   }],
   videos: [{
@@ -55,14 +55,7 @@ const productSchema = new Schema({
 
   clarity: {
     type: String,
-    enum: [
-      'FL', 
-      'IF', 
-      'VVS1', 'VVS2',
-      'VS1', 'VS2',    
-      'SI1', 'SI2',  
-      'I1', 'I2', 'I3' 
-    ],
+   
     required: true
   },
   createdAt: {
