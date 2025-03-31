@@ -1,6 +1,5 @@
 const cloudinary = require("cloudinary").v2;
 const PM = require("../model/productModel");
-const storage = require("node-persist");
 require("dotenv").config();
 
 // Cloudinary Config
@@ -14,23 +13,29 @@ cloudinary.config({
 exports.createProduct = async (req, res) => {
   try {
     const data = req.body;
-    if (!req.file) {
-      return res.status(400).json({ status: "fail", message: "Image file is required" });
+
+    // ✅ Ensure images exist
+    if (!req.files?.images || req.files.images.length === 0) {
+      return res.status(400).json({ status: "fail", message: "At least one image is required" });
     }
 
-    // ✅ Upload image to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: "claireimages/",
-      resource_type: "image",
+    // ✅ Upload multiple images to Cloudinary
+    const imageUploadPromises = req.files.images.map(async (file) => {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: "claireimages/",
+        resource_type: "image",
+      });
+      return result.secure_url;
     });
 
-    data.image = uploadResult.secure_url; // ✅ Save Cloudinary image URL in DB
-    if (req.files?.images) {
-      data.images = req.files.images.map((file) => file.filename);
-    }
+    data.images = await Promise.all(imageUploadPromises); // ✅ Store Cloudinary URLs
+
+    // ✅ Upload videos if available
     if (req.files?.videos) {
       data.videos = req.files.videos.map((file) => file.filename);
     }
+
+    // ✅ Create product in DB
     const product = await PM.create(data);
 
     res.status(201).json({
@@ -49,7 +54,7 @@ exports.createProduct = async (req, res) => {
 // ✅ View Products (Single or All)
 exports.viewProducts = async (req, res) => {
   try {
-    const  id  = req.params.id;
+    const { id } = req.params;
 
     if (id) {
       // ✅ Get single product
@@ -105,35 +110,29 @@ exports.deleteProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    storage.initSync();
-    
-    const storedId = await storage.getItem("id");
-    const productExists = await PM.findOne({ _id: id });
 
+    // ✅ Ensure product exists
+    const productExists = await PM.findById(id);
     if (!productExists) {
       return res.status(404).json({ status: "fail", message: "Product not found" });
-    }
-
-    if (storedId !== productExists.uid) {
-      return res.status(403).json({ status: "fail", message: "Unauthorized to update this product" });
     }
 
     const data = req.body;
 
     // ✅ Handle image upload if new image is provided
-    if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "claireimages/",
-        resource_type: "image",
+    if (req.files?.images) {
+      const imageUploadPromises = req.files.images.map(async (file) => {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "claireimages/",
+          resource_type: "image",
+        });
+        return result.secure_url;
       });
 
-      data.image = uploadResult.secure_url;
+      data.images = await Promise.all(imageUploadPromises);
     }
 
-    // ✅ Handle additional files (images/videos)
-    if (req.files?.images) {
-      data.images = req.files.images.map((file) => file.filename);
-    }
+    // ✅ Handle additional files (videos)
     if (req.files?.videos) {
       data.videos = req.files.videos.map((file) => file.filename);
     }
