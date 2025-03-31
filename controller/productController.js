@@ -14,8 +14,8 @@ exports.createProduct = async (req, res) => {
   try {
     const data = req.body;
 
-    // ✅ Ensure images exist
-    if (!req.files?.images || req.files.images.length === 0) {
+    // ✅ Ensure images exist before uploading
+    if (!req.files || !req.files.images || req.files.images.length === 0) {
       return res.status(400).json({ status: "fail", message: "At least one image is required" });
     }
 
@@ -30,7 +30,7 @@ exports.createProduct = async (req, res) => {
 
     data.images = await Promise.all(imageUploadPromises); // ✅ Store Cloudinary URLs
 
-    // ✅ Upload videos if available
+    // ✅ Upload videos if available (only filenames saved, no upload to Cloudinary)
     if (req.files?.videos) {
       data.videos = req.files.videos.map((file) => file.filename);
     }
@@ -50,6 +50,7 @@ exports.createProduct = async (req, res) => {
     });
   }
 };
+
 
 // ✅ View Products (Single or All)
 exports.viewProducts = async (req, res) => {
