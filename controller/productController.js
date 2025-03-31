@@ -14,28 +14,36 @@ exports.createProduct = async (req, res) => {
   try {
     const data = req.body;
 
-    // ✅ Ensure images exist before uploading
+    // ✅ Check if any images were uploaded
     if (!req.files || !req.files.images || req.files.images.length === 0) {
       return res.status(400).json({ status: "fail", message: "At least one image is required" });
     }
 
-    // ✅ Upload multiple images to Cloudinary
+    console.log("Received Files:", req.files); // ✅ Debugging line
+
+    // ✅ Upload images to Cloudinary
     const imageUploadPromises = req.files.images.map(async (file) => {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: "claireimages/",
-        resource_type: "image",
-      });
-      return result.secure_url;
+      const result = await cloudinary.uploader.upload_stream(
+        { folder: "claireimages/", resource_type: "image" },
+        (error, result) => {
+          if (error) {
+            throw new Error("Cloudinary upload failed: " + error.message);
+          }
+          return result.secure_url;
+        }
+      );
+
+      result.end(file.buffer); // ✅ Send file buffer to Cloudinary
     });
 
     data.images = await Promise.all(imageUploadPromises); // ✅ Store Cloudinary URLs
 
-    // ✅ Upload videos if available (only filenames saved, no upload to Cloudinary)
+    // ✅ Upload videos if available
     if (req.files?.videos) {
       data.videos = req.files.videos.map((file) => file.filename);
     }
 
-    // ✅ Create product in DB
+    // ✅ Save product in DB
     const product = await PM.create(data);
 
     res.status(201).json({
