@@ -7,7 +7,7 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-}); 
+});
 
 // ✅ Create Product
 exports.createProduct = async (req, res) => {
@@ -15,32 +15,32 @@ exports.createProduct = async (req, res) => {
     const data = req.body;
 
     const file = req.files.images
-    console.log("file ==> ",file);
-    
+    console.log("file ==> ", file);
+
 
     // ✅ Check if any images were uploaded
     // if (!req.files || !req.files.images || req.files.images.length === 0) {
     //   return res.status(400).json({ status: "fail", message: "At least one image is required" });
     // }
 
-    const stData = file.map(async(file) => {
+    const stData = file.map(async (file) => {
       // console.log(file);
-          const upload = await cloudinary.uploader.upload(file.path , {
-      folder : 'claireimages/',
-      public_id : file.filename,
-      resource_type : 'image'
-    })
-    // console.log("check all ==> ",upload);
-    
-    return  upload.secure_url
+      const upload = await cloudinary.uploader.upload(file.path, {
+        folder: 'claireimages/',
+        public_id: file.filename,
+        resource_type: 'image'
+      })
+      // console.log("check all ==> ",upload);
+
+      return upload.secure_url
     })
 
     const uploadedUrls = await Promise.all(stData);
-  data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
-  console.log("All uploaded URLs:", data.images);
+    data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
+    console.log("All uploaded URLs:", data.images);
 
     // console.log("all data.images ==> ",data.images);
-    
+
 
 
     // if (req.files?.videos) {
@@ -68,6 +68,7 @@ exports.createProduct = async (req, res) => {
 exports.viewProducts = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(req.params.id);
 
     if (id) {
       // ✅ Get single product
@@ -99,6 +100,28 @@ exports.viewProducts = async (req, res) => {
     });
   }
 };
+
+exports.viewProductsbyID = async (req, res) => {
+  try {
+
+    const id = req.params.id
+    const product = await PM.findById(id)
+      .populate("categoryId", "categoryName")
+      .populate("subCategoryId", "subCategoryName");
+    if (!product) {
+      return res.status(404).json({ status: "fail", message: "Product not found" });
+    }
+
+    res.status(200).json({ status: "success", data: product });
+  }
+  catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+
+}
 
 // ✅ Delete Product
 exports.deleteProduct = async (req, res) => {

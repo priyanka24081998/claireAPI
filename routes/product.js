@@ -19,7 +19,7 @@ const upload = multer({ storage: storage })
 
 /* GET all products */
 router.get("/", PC.viewProducts);
-
+router.get("/:id",PC.viewProductsbyID)
 /* CREATE a new product (Protected Route) */
 router.post(
   "/createProduct",
