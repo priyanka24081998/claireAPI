@@ -7,41 +7,45 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+}); 
 
 // ✅ Create Product
 exports.createProduct = async (req, res) => {
   try {
     const data = req.body;
 
+    const file = req.files.images
+    console.log("file ==> ",file);
+    
+
     // ✅ Check if any images were uploaded
-    if (!req.files || !req.files.images || req.files.images.length === 0) {
-      return res.status(400).json({ status: "fail", message: "At least one image is required" });
-    }
+    // if (!req.files || !req.files.images || req.files.images.length === 0) {
+    //   return res.status(400).json({ status: "fail", message: "At least one image is required" });
+    // }
 
-    console.log("Received Files:", req.files); // ✅ Debugging line
+    const stData = file.map(async(file) => {
+      // console.log(file);
+          const upload = await cloudinary.uploader.upload(file.path , {
+      folder : 'claireimages/',
+      public_id : file.filename,
+      resource_type : 'image'
+    })
+    // console.log("check all ==> ",upload);
+    
+    return  upload.secure_url
+    })
 
-    // ✅ Upload images to Cloudinary
-    const imageUploadPromises = req.files.images.map(async (file) => {
-      const result = await cloudinary.uploader.upload_stream(
-        { folder: "claireimages/", resource_type: "image" },
-        (error, result) => {
-          if (error) {
-            throw new Error("Cloudinary upload failed: " + error.message);
-          }
-          return result.secure_url;
-        }
-      );
+    const uploadedUrls = await Promise.all(stData);
+  data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
+  console.log("All uploaded URLs:", data.images);
 
-      result.end(file.buffer); // ✅ Send file buffer to Cloudinary
-    });
+    // console.log("all data.images ==> ",data.images);
+    
 
-    data.images = await Promise.all(imageUploadPromises); // ✅ Store Cloudinary URLs
 
-    // ✅ Upload videos if available
-    if (req.files?.videos) {
-      data.videos = req.files.videos.map((file) => file.filename);
-    }
+    // if (req.files?.videos) {
+    //   data.videos = req.files.videos.map((file) => file.filename);
+    // }
 
     // ✅ Save product in DB
     const product = await PM.create(data);

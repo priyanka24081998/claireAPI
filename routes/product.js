@@ -5,8 +5,17 @@ const multer = require("multer");
 const { verifyToken } = require("../middleware/authMiddleware");
 
 // Use memoryStorage instead of diskStorage (better for Cloudinary)
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './public/images')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+})
+
+const upload = multer({ storage: storage })
 
 /* GET all products */
 router.get("/", PC.viewProducts);
@@ -22,6 +31,13 @@ router.post(
   PC.createProduct
 );
 
+
+// router.post(
+//   "/createProduct",
+//   verifyToken, // Verify user first
+//   upload.single('images'),
+//   PC.createProduct
+// );
 /* DELETE a product by ID (Protected Route) */
 router.delete("/deleteProduct/:id", verifyToken, PC.deleteProduct);
 
