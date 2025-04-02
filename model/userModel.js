@@ -5,27 +5,26 @@ const userSchema = new Schema({
 
     name: {
         type: String,
-        required: [true, "Name is required"],
         trim: true,
+        required:true,
     },
     lastname: {
         type: String,
-        required: [true, "Last name is required"],
         trim: true,
+        required:true,
     },
-    email: {
-        type: String,
-        required: [true, "Email is required"],
-        unique: true, 
-        trim: true,
-        lowercase: true, 
-        match: [/\S+@\S+\.\S+/, "Invalid email format"], 
+    emailId: {
+        type:  mongoose.Schema.Types.ObjectId,
+        ref: 'usermail', 
+        required: true
+       
     },
     password: {
         type: String,
         required: [true, "Password is required"],
         minlength: [6, "Password must be at least 6 characters long"], 
     },
+   
 },
 )
 

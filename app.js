@@ -10,6 +10,7 @@ var usersRouter = require('./routes/users');
 var productRouter = require('./routes/product');
 var categoryRouter = require('./routes/category');
 var subCategoryRouter = require('./routes/subCategory');
+var userMailRouter = require('./routes/userMail');
 
 const mongoose = require('mongoose');
 mongoose.connect('mongodb://clairediamondsjewellery:dsh5Gp4wlSo5465Q@cluster0-shard-00-00.vmqz8.mongodb.net:27017,cluster0-shard-00-01.vmqz8.mongodb.net:27017,cluster0-shard-00-02.vmqz8.mongodb.net:27017/?replicaSet=atlas-u8bwtu-shard-0&ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0')
@@ -38,7 +39,7 @@ app.use('/users', usersRouter);
 app.use('/product',productRouter);
 app.use('/category',categoryRouter);
 app.use('/subCategory',subCategoryRouter);
-
+app.use('/usermail',userMailRouter)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

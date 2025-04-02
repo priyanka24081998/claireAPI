@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 
+
 exports.verifyToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader.split(' ')[1];
@@ -16,3 +17,4 @@ exports.verifyToken = (req, res, next) => {
         res.status(403).json({ status: 'fail', message: 'Invalid or expired token' });
     }
 };
+ 
