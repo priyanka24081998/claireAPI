@@ -112,17 +112,29 @@ exports.verifyOtp = async (req, res, next) => {
 // ✅ User Registration
 exports.registerUser = async (req, res) => {
   try {
-    const { name, lastname, password } = req.body;
+    const { name, lastname, email, password } = req.body;
+
+    // Find the email document in `usermail` collection
+    const userMail = await UserMail.findOne({ email });
+
+    if (!userMail) {
+      return res.status(400).json({ error: "Email not found. Please verify your email first." });
+    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const newUser = await User.create({ name, lastname, password: hashedPassword });
+    // Create new user with the correct `emailId`
+    const newUser = await User.create({
+      name,
+      lastname,
+      emailId: userMail._id, // Assign the ObjectId of usermail
+      password: hashedPassword,
+    });
 
     res.status(201).json({
       message: "User registered successfully!",
-      data: { name: newUser.name, lastname: newUser.lastname },
+      data: { name: newUser.name, lastname: newUser.lastname,},
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
