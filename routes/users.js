@@ -11,6 +11,11 @@ router.post('/register',UC.registerUser);
 router.get('/all',UC.getAllUsers);
 router.get('/:id',UC.getUserById);
 router.delete('/deleteUser/:id',UC.deleteUser);
-router.patch('/updateUser/:id',UC.updatePassword)
+router.patch('/updateUser/:id',UC.updatePassword);
+router.post('/forgotpassword',UC.forgotPassword);
+router.post('/verifyotpreset',UC.verifyOtpForReset);
+router.post('/resetpassword',UC.resetPassword)
+
+
 
 module.exports = router;

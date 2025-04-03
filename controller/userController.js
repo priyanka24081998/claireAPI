@@ -252,3 +252,89 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if email exists
+    const user = await UserMail.findOne({ email });
+    if (!user) return res.status(400).json({ message: "User not found" });
+
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+    // Save OTP in the database
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Send OTP via Email
+    const mailOptions = {
+      from: `"Claire Diamonds" <${process.env.EMAIL}>`,
+      to: email,
+      subject: "🔒 Password Reset OTP",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+          <h2 style="color: #333;">🔐 Reset Your Password</h2>
+          <p style="font-size: 18px; color: #555;">Use the OTP below to reset your password. It is valid for <b>10 minutes</b>.</p>
+          <p style="font-size: 24px; font-weight: bold; color: #d9534f; background: #f8f9fa; padding: 10px; border-radius: 5px; display: inline-block; letter-spacing: 2px;">${otp}</p>
+          <p style="color: #777; font-size: 14px; margin-top: 15px;">If you did not request this, please ignore this email.</p>
+        </div>
+      `,
+    };
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "OTP sent for password reset!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ✅ Verify OTP for Password Reset
+exports.verifyOtpForReset = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find user in UserMail collection
+    const user = await UserMail.findOne({ email });
+    if (!user) return res.status(400).json({ message: "User not found" });
+
+    // Check OTP validity
+    if (!user.otp || user.otpExpires < new Date()) {
+      return res.status(400).json({ message: "OTP expired. Request a new one." });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    res.json({ message: "OTP verified successfully!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ✅ Reset Password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    // Find user in UserMail collection
+    const userMail = await UserMail.findOne({ email });
+    if (!userMail) return res.status(404).json({ message: "User not found" });
+
+    // Find user in User collection using emailId
+    const user = await User.findOne({ emailId: userMail._id });
+    if (!user) return res.status(404).json({ message: "User not found in main database" });
+
+    // Hash new password
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: "Password reset successfully!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
