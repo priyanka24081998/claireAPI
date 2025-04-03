@@ -6,10 +6,6 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 require("dotenv").config(); 
 
-console.log(process.env.EMAIL);
-console.log(process.env.EMAIL_PASSWORD);
-
-
 // ✅ Secure & Correct SMTP Config
 const transporter = nodemailer.createTransport({
   service: 'gmail',
