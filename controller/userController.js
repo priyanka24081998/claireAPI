@@ -1,10 +1,12 @@
 const User = require("../model/userModel");
-const UserMail = require("../model/usermail"); 
+const UserMail = require("../model/usermail");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-require("dotenv").config(); 
+const mongoose = require("mongoose");
+
+require("dotenv").config();
 
 // ✅ Secure & Correct SMTP Config
 const transporter = nodemailer.createTransport({
@@ -23,13 +25,13 @@ const transporter = nodemailer.createTransport({
 
 // ✅ Send OTP
 exports.sendOtp = async (req, res) => {
- 
+
   try {
     const { email } = req.body;
 
     // Check if user exists
     const user = await UserMail.findOne({ email });
-  
+
     if (!user) return res.status(400).json({ message: "User not found" });
 
     // Generate OTP
@@ -65,12 +67,12 @@ exports.sendOtp = async (req, res) => {
         console.log("✅ Email sent successfully:", info);
       }
     });
- 
+
     res.json({ message: "OTP sent successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-  
+
 };
 exports.verifyOtp = async (req, res, next) => {
   try {
@@ -78,7 +80,7 @@ exports.verifyOtp = async (req, res, next) => {
 
     // Find the user by email
     const user = await UserMail.findOne({ email });
-    
+
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
@@ -102,7 +104,7 @@ exports.verifyOtp = async (req, res, next) => {
     // OTP is valid, proceed to the next middleware (registerUser controller)
     res.status(201).json({
       message: "User verified successfully!",
-      data: {email: user.email},
+      data: { email: user.email },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -134,7 +136,7 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({
       message: "User registered successfully!",
-      data: { name: newUser.name, lastname: newUser.lastname,},
+      data: { name: newUser.name, lastname: newUser.lastname, },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -146,22 +148,43 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
-    const user = await UserMail.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid email or password" });
+    // Step 1: Find email in UserMail
+    const userMail = await UserMail.findOne({ email: email });
+    console.log(userMail);
+    if (!userMail) return res.status(400).json({ message: "Invalid email" });
 
-    // Check password
+    console.log("UserMail Found:", userMail);
+    console.log("Searching User by _id:", userMail._id);
+
+
+    // Step 2: Find corresponding user in User collection
+    console.log("Searching for User with emailId._id:", userMail._id);
+    const user = await User.findOne({ emailId: userMail._id });
+
+    if (!user) {
+      console.log("User not found, trying alternative search...");
+      user = await User.findOne({ "emailId.email": userMail.email });
+    }
+
+    console.log("User Found:", user);
+
+    if (!user) return res.status(400).json({ message: "Invalid email id" });
+
+    // Step 3: Check password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user._id, email: user.emailId.email }, process.env.JWT_SECRET,);
+    // Step 4: Generate JWT token
+    const token = jwt.sign({ userId: user._id, email: email }, process.env.JWT_SECRET);
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
 
 
 
@@ -224,7 +247,7 @@ exports.updatePassword = async (req, res) => {
 // ✅ Get All Users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("emailId","email").select("-password");
+    const users = await User.find().populate("emailId", "email").select("-password");
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -234,7 +257,7 @@ exports.getAllUsers = async (req, res) => {
 // ✅ Get User By ID
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate("emailId","email").select("-password");
+    const user = await User.findById(req.params.id).populate("emailId", "email").select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json(user);
   } catch (error) {

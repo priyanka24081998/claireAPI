@@ -9,7 +9,7 @@ exports.signup = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "Email already in use" });
         }
-
+        
         // Create user
         const newUser = await UMM.create({ email });
 
