@@ -16,8 +16,9 @@ const userSchema = new Schema({
     emailId: {
         type:  mongoose.Schema.Types.ObjectId,
         ref: 'usermail', 
-        required: true
-       
+        required: true,
+        unique: true, // Prevents duplicates
+
     },
     password: {
         type: String,
