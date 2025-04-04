@@ -11,6 +11,11 @@ const userSchema = new Schema({
         lowercase: true, 
         match: [/\S+@\S+\.\S+/, "Invalid email format"], 
     },
+    googleId: { type: String, unique: true, sparse: true }, // Google ID (optional)
+    name: { type: String, },
+   
+    profilePicture: { type: String }, // Store Google profile picture
+  
     otp: String,
   otpExpires: Date,
 },
