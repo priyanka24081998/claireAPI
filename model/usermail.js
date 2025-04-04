@@ -14,6 +14,6 @@ const userSchema = new Schema({
     otp: String,
   otpExpires: Date,
 },
-)
+)   
 
 module.exports = mongoose.model('usermail', userSchema)
