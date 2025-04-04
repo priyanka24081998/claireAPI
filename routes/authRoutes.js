@@ -43,7 +43,7 @@ router.get(
       res.redirect(`https://www.clairediamonds.com?token=${token}`);
     } catch (error) {
       console.error("Error saving Google user:", error);
-      res.redirect("https://www.clairediamonds.com/login?error=DatabaseError");
+      res.redirect("https://www.clairediamonds.com");
     }
     res.redirect("https://www.clairediamonds.com");
   }
@@ -55,7 +55,7 @@ router.get("/logout", (req, res) => {
     if (err) {
       return res.status(500).json({ message: "Logout failed" });
     }
-    res.redirect("https://www.clairediamonds.com/login");
+    res.redirect("https://www.clairediamonds.com");
   });
 });
 
