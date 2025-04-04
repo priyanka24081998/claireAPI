@@ -32,17 +32,7 @@ server.on('listening', onListening);
 /**
  * Normalize a port into a number, string, or false.
  */
-const PORT = process.env.PORT || 10000; // Default to 10000 if no port is set
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
-const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-server.keepAliveTimeout = 120000; // 120 seconds
-server.headersTimeout = 120000; 
 function normalizePort(val) {
   var port = parseInt(val, 10);
 
