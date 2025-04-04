@@ -5,10 +5,11 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const session = require("express-session");
-const passport = require("./config/passport");
+const passport = require("passport"); // ✅ Ensure this is correct
+
+require("./config/passport");
 const authRoutes = require("./routes/authRoutes");
 require("dotenv").config();
-const session = require("express-session");
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -35,9 +36,7 @@ app.use(
   })
 );
 
-// Initialize passport
-app.use(passport.initialize());
-app.use(passport.session());
+
 
 
 // view engine setup
@@ -51,7 +50,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 // app.use("/images", express.static(path.join(__dirname, "public/images")));
 
-
+// Initialize passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
