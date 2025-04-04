@@ -8,7 +8,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "https://api.clairediamonds.com/auth/google/callback", // Ensure this matches the redirect URI in Google Developer Console
+      callbackURL: "https://claireapi.onrender.com/auth/google/callback", // Ensure this matches the redirect URI in Google Developer Console
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
