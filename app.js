@@ -4,6 +4,13 @@ var cors = require('cors')
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require("express-session");
+const passport = require("./config/passport");
+const authRoutes = require("./routes/authRoutes");
+require("dotenv").config();
+
+
+
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -12,6 +19,7 @@ var categoryRouter = require('./routes/category');
 var subCategoryRouter = require('./routes/subCategory');
 var userMailRouter = require('./routes/userMail');
 
+
 const mongoose = require('mongoose');
 mongoose.connect('mongodb://clairediamondsjewellery:dsh5Gp4wlSo5465Q@cluster0-shard-00-00.vmqz8.mongodb.net:27017,cluster0-shard-00-01.vmqz8.mongodb.net:27017,cluster0-shard-00-02.vmqz8.mongodb.net:27017/?replicaSet=atlas-u8bwtu-shard-0&ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0')
 .then(() => console.log('connected'));
@@ -19,6 +27,18 @@ mongoose.connect('mongodb://clairediamondsjewellery:dsh5Gp4wlSo5465Q@cluster0-sh
 
 var app = express();
 app.use(cors());
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// Initialize passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 
 // view engine setup
@@ -40,6 +60,7 @@ app.use('/product',productRouter);
 app.use('/category',categoryRouter);
 app.use('/subCategory',subCategoryRouter);
 app.use('/usermail',userMailRouter)
+app.use("/auth", authRoutes);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
