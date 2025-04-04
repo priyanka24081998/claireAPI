@@ -8,9 +8,7 @@ const session = require("express-session");
 const passport = require("./config/passport");
 const authRoutes = require("./routes/authRoutes");
 require("dotenv").config();
-
-
-
+const session = require("express-session");
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -33,6 +31,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    cookie: { secure: true, httpOnly: true, sameSite: "lax" }, // Adjust based on deployment
   })
 );
 
