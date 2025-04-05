@@ -13,7 +13,7 @@ router.get(
 // Google OAuth callback route
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", { failureRedirect: "https://www.clairediamonds.com/login" }),
   async (req, res) => {
     if (!req.user) {
       return res.redirect("https://www.clairediamonds.com/login?error=NoUser");
@@ -23,9 +23,10 @@ router.get(
 
     try {
       let user = await User.findOne({ email: emails[0].value });
+      const isNewUser = !user;
 
-      if (!user) {
-        // If user doesn't exist, create a new one
+      if (isNewUser) {
+        // Create new user
         user = new User({
           googleId: id,
           name: displayName,
@@ -36,16 +37,23 @@ router.get(
       }
 
       // Generate JWT token
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, 
-      );
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d", // optional: expires in 7 days
+      });
 
-      // Redirect to frontend with token
-      res.redirect(`https://www.clairediamonds.com?token=${token}`);
+      // Build redirect URL
+      let redirectUrl = `https://www.clairediamonds.com/signup?token=${token}`;
+
+      if (isNewUser) {
+        // Add newUser flag and email for frontend redirect logic
+        redirectUrl += `&newUser=true&email=${encodeURIComponent(user.email)}`;
+      }
+
+      return res.redirect(redirectUrl);
     } catch (error) {
       console.error("Error saving Google user:", error);
-      res.redirect("https://www.clairediamonds.com");
+      return res.redirect("https://www.clairediamonds.com/login?error=ServerError");
     }
-    res.redirect("https://www.clairediamonds.com");
   }
 );
 
