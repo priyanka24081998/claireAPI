@@ -14,14 +14,25 @@ passport.use(
       try {
         let user = await User.findOne({ googleId: profile.id });
 
-        if (!user) {
-          user = await User.create({
-            googleId: profile.id,
-            email: profile.emails[0].value,
-            name: profile.displayName,
-          });
-        } // console.log("Google profile: ", profile);
-      
+        
+            
+            const existingUser = await User.findOne({ email: profile.emails[0].value });
+          
+            if (existingUser) {
+              // Update that user to link Google account
+              existingUser.googleId = profile.id;
+              await existingUser.save();
+              user = existingUser;
+            } else {
+              // Create new user
+              user = await User.create({
+                googleId: profile.id,
+                email: profile.emails[0].value,
+                name: profile.displayName,
+              });
+            }
+         
+          
 
         // You can pass full info here for later use
         return done(null, user);
