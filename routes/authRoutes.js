@@ -12,50 +12,40 @@ router.get(
 
 // Google OAuth callback route
 router.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "https://www.clairediamonds.com/login" }),
-  async (req, res) => {
-    if (!req.user) {
-      return res.redirect("https://www.clairediamonds.com/login?error=NoUser");
-    }
-
-    const { id, displayName, emails, photos } = req.user;
-
-    try {
-      let user = await User.findOne({ email: emails[0].value });
-      const isNewUser = !user;
-
-      if (isNewUser) {
-        // Create new user
-        user = new User({
-          googleId: id,
-          name: displayName,
-          email: emails[0].value,
-          profilePicture: photos[0].value,
+    "/google/callback",
+    passport.authenticate("google", { failureRedirect: "/login" }),
+    async (req, res) => {
+      try {
+        const { googleId, name, email, profilePicture } = req.user;
+  
+        if (!email) {
+          return res.redirect("https://www.clairediamonds.com/login?error=NoEmail");
+        }
+  
+        let user = await User.findOne({ email });
+        const isNewUser = !user;
+  
+        if (isNewUser) {
+          user = new User({ googleId, name, email, profilePicture });
+          await user.save();
+        }
+  
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+          expiresIn: "7d",
         });
-        await user.save();
+  
+        let redirectUrl = `https://www.clairediamonds.com/signup?token=${token}`;
+        if (isNewUser) {
+          redirectUrl += `&newUser=true&email=${encodeURIComponent(email)}`;
+        }
+  
+        return res.redirect(redirectUrl);
+      } catch (error) {
+        console.error("Error saving Google user:", error);
+        return res.redirect("https://www.clairediamonds.com/login?error=ServerError");
       }
-
-      // Generate JWT token
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "7d", // optional: expires in 7 days
-      });
-
-      // Build redirect URL
-      let redirectUrl = `https://www.clairediamonds.com/signup?token=${token}`;
-
-      if (isNewUser) {
-        // Add newUser flag and email for frontend redirect logic
-        redirectUrl += `&newUser=true&email=${encodeURIComponent(user.email)}`;
-      }
-
-      return res.redirect(redirectUrl);
-    } catch (error) {
-      console.error("Error saving Google user:", error);
-      return res.redirect("https://www.clairediamonds.com/login?error=ServerError");
     }
-  }
-);
+  );
 
 // Logout route
 router.get("/logout", (req, res) => {

@@ -20,9 +20,18 @@ passport.use(
             email: profile.emails[0].value,
             name: profile.displayName,
           });
-        }
+        } // console.log("Google profile: ", profile);
+        const email = profile.emails?.[0]?.value;
+        const photo = profile.photos?.[0]?.value;
+        const name = profile.displayName;
 
-        return done(null, user);
+        // You can pass full info here for later use
+        done(null, {
+          googleId: profile.id,
+          name,
+          email,
+          profilePicture: photo,
+        });
       } catch (err) {
         return done(err, null);
       }
