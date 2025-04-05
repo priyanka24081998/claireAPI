@@ -21,17 +21,10 @@ passport.use(
             name: profile.displayName,
           });
         } // console.log("Google profile: ", profile);
-        const email = profile.emails?.[0]?.value;
-        const photo = profile.photos?.[0]?.value;
-        const name = profile.displayName;
+      
 
         // You can pass full info here for later use
-        done(null, {
-          googleId: profile.id,
-          name,
-          email,
-          profilePicture: photo,
-        });
+        return done(null, user);
       } catch (err) {
         return done(err, null);
       }
@@ -40,14 +33,16 @@ passport.use(
 );
 
 passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (err) {
-    done(err, null);
-  }
-});
+    console.log("🔐 Serializing user:", user);
+    done(null, user._id);
+  });
+  
+  passport.deserializeUser(async (id, done) => {
+    console.log("🔓 Deserializing user by ID:", id);
+    try {
+      const user = await User.findById(id);
+      done(null, user);
+    } catch (err) {
+      done(err, null);
+    }
+  });
