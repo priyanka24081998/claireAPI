@@ -25,11 +25,10 @@ mongoose.connect('mongodb://clairediamondsjewellery:dsh5Gp4wlSo5465Q@cluster0-sh
 
 
 var app = express();
-app.use(cors());
-
-
-
-
+app.use(cors({
+  origin: 'https://www.clairediamonds.com',
+  credentials: true
+}));
 
 
 // view engine setup
@@ -49,7 +48,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: true, httpOnly: true, sameSite: "lax" }, // Adjust based on deployment
+    cookie: { secure: true, httpOnly: true, sameSite: "none" }, // Adjust based on deployment
   })
 );
 app.use(passport.initialize());
