@@ -25,10 +25,8 @@ mongoose.connect('mongodb://clairediamondsjewellery:dsh5Gp4wlSo5465Q@cluster0-sh
 
 
 var app = express();
-app.use(cors({
-  origin: 'https://www.clairediamonds.com',
-  credentials: true
-}));
+// 
+app.use(cors());
 
 
 // view engine setup
