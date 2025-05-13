@@ -29,9 +29,9 @@ exports.createProduct = async (req, res) => {
     return  upload.secure_url
     })
 
-    const uploadedUrls = await Promise.all(stData);
-  data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
-  console.log("All uploaded URLs:", data.images);
+      const uploadedUrls = await Promise.all(stData);
+    data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
+    console.log("All uploaded URLs:", data.images);
 
     // console.log("all data.images ==> ",data.images);
     
