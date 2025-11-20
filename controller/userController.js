@@ -49,50 +49,59 @@ exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check if user exists
     const user = await UserMail.findOne({ email });
-
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    // Generate OTP
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save OTP in database
     user.otp = otp;
     user.otpExpires = otpExpires;
     await user.save();
 
-    // Send OTP via Email
-    const mailOptions = {
-      from: `"Claire Diamonds" <${process.env.EMAIL}>`,
-      to: email,
-      subject: "🔒 Secure OTP Code for Verification",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 2px 2px 12px rgba(0, 0, 0, 0.1); text-align: center;">
-          <img src="https://www.clairediamonds.com/_next/image?url=%2Fassets%2Flogo2.png&w=3840&q=75" alt="Claire Diamonds" style="width: 150px;height:100px; margin-bottom: 20px;">
-          <h2 style="color: #333;">🔐 Your OTP Code</h2>
-          <p style="font-size: 18px; color: #555;">Use the OTP below to verify your identity. It is valid for <b>10 minutes</b>.</p>
-          <p style="font-size: 24px; font-weight: bold; color: #d9534f; background: #f8f9fa; padding: 10px; border-radius: 5px; display: inline-block; letter-spacing: 2px;">${otp}</p>
-          <p style="color: #777; font-size: 14px; margin-top: 15px;">If you did not request this, please ignore this email.</p>
-          <hr style="border: 0; height: 1px; background: #ddd; margin: 20px 0;">
-          <p style="font-size: 12px; color: #999;">Claire Diamonds &copy; ${new Date().getFullYear()} | All Rights Reserved</p>
-        </div>
-      `,
-    };
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("❌ Email sending failed:", error);
-      } else {
-        console.log("✅ Email sent successfully:", info);
-      }
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 2px 2px 12px rgba(0,0,0,0.1); text-align: center;">
+        <img src="https://www.clairediamonds.com/_next/image?url=%2Fassets%2Flogo2.png&w=3840&q=75" alt="Claire Diamonds" style="width: 150px;height:100px; margin-bottom: 20px;">
+        <h2 style="color: #333;">🔐 Your OTP Code</h2>
+        <p style="font-size: 18px; color: #555;">Use the OTP below to verify your identity. It is valid for <b>10 minutes</b>.</p>
+        <p style="font-size: 24px; font-weight: bold; color: #d9534f; background: #f8f9fa; padding: 10px; border-radius: 5px; display: inline-block; letter-spacing: 2px;">${otp}</p>
+        <p style="color: #777; font-size: 14px; margin-top: 15px;">If you did not request this, please ignore this email.</p>
+        <hr style="border:0; height:1px; background:#ddd; margin:20px 0;">
+        <p style="font-size:12px; color:#999;">Claire Diamonds &copy; ${new Date().getFullYear()} | All Rights Reserved</p>
+      </div>
+    `;
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY
+      },
+      body: JSON.stringify({
+        sender: { name: process.env.FROM_NAME, email: process.env.FROM_EMAIL },
+        to: [{ email }],
+        subject: "🔒 Secure OTP Code for Verification",
+        htmlContent
+      })
     });
 
-    res.json({ message: "OTP sent successfully!" });
+    // ✅ Parse JSON once and log
+    const json = await response.json();
+    console.log("Brevo API Response:", json);
+
+    if (!response.ok || !json.messageId) {
+      throw new Error(`Brevo API error: ${JSON.stringify(json)}`);
+    }
+
+    res.json({ message: "OTP sent successfully via Brevo!" });
   } catch (error) {
+    console.error("Send OTP Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
 exports.verifyOtp = async (req, res, next) => {
   try {
     const { email, otp } = req.body; // Get the email and OTP from the request body
@@ -401,6 +410,7 @@ exports.forgotPassword = async (req, res) => {
 
 
 
+
 // ✅ Verify OTP for Password Reset
 exports.verifyOtpForReset = async (req, res) => {
   try {
@@ -412,17 +422,21 @@ exports.verifyOtpForReset = async (req, res) => {
 
     // Check OTP validity
     if (!user.otp || user.otpExpires < new Date()) {
-      return res
-        .status(400)
-        .json({ message: "OTP expired. Request a new one." });
+      return res.status(400).json({ message: "OTP expired. Request a new one." });
     }
 
     if (user.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
+    // ✅ OTP verified → clear it
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
     res.json({ message: "OTP verified successfully!" });
   } catch (error) {
+    console.error("Verify OTP Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
