@@ -102,37 +102,35 @@ exports.sendOtp = async (req, res) => {
 
 
 
-exports.verifyOtp = async (req, res, next) => {
+exports.verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body; // Get the email and OTP from the request body
+    const { email, otp } = req.body;
 
-    // Find the user by email
     const user = await UserMail.findOne({ email });
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
-    console.log("Stored OTP:", user.otp);
-    console.log("Stored Expiry:", user.otpExpires);
-    console.log("Current Time:", new Date());
 
-    // Ensure `otpExpires` is a Date object
+    console.log("Stored OTP:", user.otp);
+    console.log("Client OTP:", otp);
+
     const expiryTime = new Date(user.otpExpires);
 
-    // Check if OTP exists and verify if it's expired
+    // Check expiry
     if (!user.otp || expiryTime < new Date()) {
-      return res
-        .status(400)
-        .json({ message: "OTP expired. Please request a new one." });
+      return res.status(400).json({
+        message: "OTP expired. Please request a new one.",
+      });
     }
 
-    // Check if OTP matches
-    if (user.otp !== otp) {
+    // Compare as strings
+    if (String(user.otp) !== String(otp)) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // OTP is valid, proceed to the next middleware (registerUser controller)
-    res.status(201).json({
+    // Success
+    return res.status(200).json({
       message: "User verified successfully!",
       data: { email: user.email },
     });
@@ -140,6 +138,7 @@ exports.verifyOtp = async (req, res, next) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // ✅ User Registration
 exports.registerUser = async (req, res) => {
