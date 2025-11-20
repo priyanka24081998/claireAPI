@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
+const fetch = require("node-fetch");
 
 require("dotenv").config();
 
@@ -31,8 +32,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-console.log("Using BREVO_EMAIL:", process.env.BREVO_EMAIL);
-console.log("SMTP key length:", process.env.BREVO_SMTP_KEY?.length);
+// console.log("Using BREVO_EMAIL:", process.env.BREVO_EMAIL);
+// console.log("SMTP key length:", process.env.BREVO_SMTP_KEY?.length);
 
 // Verify SMTP (optional but useful)
 transporter.verify((err, success) => {
@@ -361,31 +362,42 @@ exports.forgotPassword = async (req, res) => {
 
     console.log("OTP saved:", otp);
 
-    // Email Template
-    const mailOptions = {
-      from: `"Claire Diamonds" <${process.env.BREVO_EMAIL}>`,
-      to: email,
-      subject: "🔒 Password Reset OTP",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
-          <h2 style="color: #333;">🔐 Reset Your Password</h2>
-          <p style="font-size: 18px; color: #555;">Use the OTP below to reset your password. It is valid for <b>10 minutes</b>.</p>
-          <p style="font-size: 24px; font-weight: bold; color: #d9534f; background: #f8f9fa; padding: 10px; border-radius: 5px; display: inline-block; letter-spacing: 2px;">${otp}</p>
-          <p style="color: #777; font-size: 14px; margin-top: 15px;">If you did not request this, please ignore this email.</p>
-        </div>
-      `,
-    };
+     const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+        <h2 style="color: #333;">🔐 Reset Your Password</h2>
+        <p style="font-size: 18px; color: #555;">Use the OTP below to reset your password. It is valid for <b>${process.env.OTP_EXPIRY_MINUTES || 10} minutes</b>.</p>
+        <p style="font-size: 24px; font-weight: bold; color: #d9534f; background: #f8f9fa; padding: 10px; border-radius: 5px; display: inline-block; letter-spacing: 2px;">${otp}</p>
+        <p style="color: #777; font-size: 14px; margin-top: 15px;">If you did not request this, please ignore this email.</p>
+      </div>
+    `;
 
-    // Send Email
-    await transporter.sendMail(mailOptions);
+    // 5️⃣ Send via Brevo API
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: process.env.FROM_NAME, email: process.env.FROM_EMAIL },
+        to: [{ email }],
+        subject: "🔒 Password Reset OTP",
+        htmlContent,
+      }),
+    });
 
-    res.json({ message: "OTP sent successfully via Brevo!" });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Brevo API error: ${text}`);
+    }
+
+    res.json({ message: "OTP sent successfully via Brevo API!" });
+
   } catch (error) {
     console.error("Forgot Password Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
 
 
 
