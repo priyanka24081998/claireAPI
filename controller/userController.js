@@ -21,15 +21,19 @@ require("dotenv").config();
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
-  secure: false, // Brevo uses TLS START
+  secure: false, // must be false for Brevo
   auth: {
     user: process.env.BREVO_EMAIL,
     pass: process.env.BREVO_SMTP_KEY,
   },
 });
+// Verify SMTP (optional but useful)
 transporter.verify((err, success) => {
-  if (err) console.log("SMTP Connection Error:", err);
-  else console.log("SMTP Server Connected:", success);
+  if (err) {
+    console.log("SMTP Connection Error:", err);
+  } else {
+    console.log("SMTP Ready:", success);
+  }
 });
 
 // ✅ Send OTP
@@ -289,6 +293,48 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+// exports.forgotPassword = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+
+//     // Check if email exists
+//     const user = await UserMail.findOne({ email });
+//     if (!user) return res.status(400).json({ message: "User not found" });
+
+//     // Generate OTP
+//     const otp = crypto.randomInt(100000, 999999).toString();
+//     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+
+//     // Save OTP in the database
+//     user.otp = otp;
+//     user.otpExpires = otpExpires;
+//     await user.save();
+//     console.log("OTP saved successfully. Proceeding to email..."); // <-- Check logs for this!
+
+//     // Send OTP via Email
+//     const mailOptions = {
+//       from: `"Claire Diamonds" <${process.env.EMAIL}>`,
+//       to: email,
+//       subject: "🔒 Password Reset OTP",
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+//           <h2 style="color: #333;">🔐 Reset Your Password</h2>
+//           <p style="font-size: 18px; color: #555;">Use the OTP below to reset your password. It is valid for <b>10 minutes</b>.</p>
+//           <p style="font-size: 24px; font-weight: bold; color: #d9534f; background: #f8f9fa; padding: 10px; border-radius: 5px; display: inline-block; letter-spacing: 2px;">${otp}</p>
+//           <p style="color: #777; font-size: 14px; margin-top: 15px;">If you did not request this, please ignore this email.</p>
+//         </div>
+//       `,
+//     };
+//     console.log("Sending mail to:", email, "from:", process.env.EMAIL); // <-- Check logs for this!
+//     await transporter.sendMail(mailOptions);
+
+//     res.json({ message: "OTP sent for password reset!" });
+//   } catch (error) {
+//     console.error("Critical Forgot Password Error:", error); // <-- Check logs for this!
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -299,17 +345,18 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save OTP in the database
+    // Save OTP
     user.otp = otp;
     user.otpExpires = otpExpires;
     await user.save();
-    console.log("OTP saved successfully. Proceeding to email..."); // <-- Check logs for this!
 
-    // Send OTP via Email
+    console.log("OTP saved:", otp);
+
+    // Email Template
     const mailOptions = {
-      from: `"Claire Diamonds" <${process.env.EMAIL}>`,
+      from: `"Claire Diamonds" <${process.env.BREVO_EMAIL}>`,
       to: email,
       subject: "🔒 Password Reset OTP",
       html: `
@@ -321,15 +368,19 @@ exports.forgotPassword = async (req, res) => {
         </div>
       `,
     };
-    console.log("Sending mail to:", email, "from:", process.env.EMAIL); // <-- Check logs for this!
+
+    // Send Email
     await transporter.sendMail(mailOptions);
 
-    res.json({ message: "OTP sent for password reset!" });
+    res.json({ message: "OTP sent successfully via Brevo!" });
   } catch (error) {
-    console.error("Critical Forgot Password Error:", error); // <-- Check logs for this!
+    console.error("Forgot Password Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
 
 // ✅ Verify OTP for Password Reset
 exports.verifyOtpForReset = async (req, res) => {
