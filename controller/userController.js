@@ -106,35 +106,27 @@ exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
+    // Find user in UserMail collection
     const user = await UserMail.findOne({ email });
+    if (!user) return res.status(400).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
+    // Check OTP validity
+    if (!user.otp || user.otpExpires < new Date()) {
+      return res.status(400).json({ message: "OTP expired. Request a new one." });
     }
 
-    console.log("Stored OTP:", user.otp);
-    console.log("Client OTP:", otp);
-
-    const expiryTime = new Date(user.otpExpires);
-
-    // Check expiry
-    if (!user.otp || expiryTime < new Date()) {
-      return res.status(400).json({
-        message: "OTP expired. Please request a new one.",
-      });
-    }
-
-    // Compare as strings
-    if (String(user.otp) !== String(otp)) {
+    if (user.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // Success
-    return res.status(200).json({
-      message: "User verified successfully!",
-      data: { email: user.email },
-    });
+    // ✅ OTP verified → clear it
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
+    res.json({ message: "OTP verified successfully!" });
   } catch (error) {
+    console.error("Verify OTP Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
