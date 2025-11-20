@@ -9,13 +9,22 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 // ✅ Secure & Correct SMTP Config
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.gmail.com",
+//   port: 465,
+//   secure: true, // IMPORTANT
+//   auth: {
+//     user: process.env.EMAIL,
+//     pass: process.env.EMAIL_PASSWORD, // app password only!
+//   },
+// });
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // IMPORTANT
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false, // Brevo uses TLS START
   auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD, // app password only!
+    user: process.env.BREVO_EMAIL,
+    pass: process.env.BREVO_SMTP_KEY,
   },
 });
 transporter.verify((err, success) => {
