@@ -292,6 +292,7 @@ exports.forgotPassword = async (req, res) => {
     user.otp = otp;
     user.otpExpires = otpExpires;
     await user.save();
+    console.log("OTP saved successfully. Proceeding to email..."); // <-- Check logs for this!
 
     // Send OTP via Email
     const mailOptions = {
@@ -307,10 +308,12 @@ exports.forgotPassword = async (req, res) => {
         </div>
       `,
     };
+    console.log("Sending mail to:", email, "from:", process.env.EMAIL); // <-- Check logs for this!
     await transporter.sendMail(mailOptions);
 
     res.json({ message: "OTP sent for password reset!" });
   } catch (error) {
+    console.error("Critical Forgot Password Error:", error); // <-- Check logs for this!
     res.status(500).json({ error: error.message });
   }
 };

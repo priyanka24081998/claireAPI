@@ -41,7 +41,7 @@ exports.updateCategory = async (req, res) => {
     const data = req.body;
 
     const category = await CM.findByIdAndUpdate(id, data, {
-      new: true, // ✅ Return updated document
+      new: true, 
       runValidators: true
     });
 
