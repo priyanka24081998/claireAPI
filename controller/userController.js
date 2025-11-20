@@ -217,37 +217,63 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// ✅ Resend OTP
+// ✅ Resend OTP (Brevo API)
 exports.resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check if user exists
+    // 1️⃣ Check if user exists
     const user = await UserMail.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    // Generate new OTP
+    // 2️⃣ Generate new OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Update the OTP in the user document
+    // 3️⃣ Save OTP
     user.otp = otp;
     user.otpExpires = otpExpires;
     await user.save();
 
-    // Send the new OTP to the user's email
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your new OTP code is: ${otp}`,
+    // 4️⃣ Email content
+    const htmlContent = `
+      <div style="font-family: Arial; max-width: 450px; margin:auto; padding:20px; border:1px solid #ddd; border-radius:8px; text-align:center;">
+        <h2>🔁 New OTP Code</h2>
+        <p>Your new OTP is valid for <b>10 minutes</b>.</p>
+        <p style="font-size:22px; font-weight:bold; color:#d9534f; background:#f2f2f2; padding:10px; border-radius:5px;">${otp}</p>
+      </div>
+    `;
+
+    // 5️⃣ Send using Brevo API
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: "Claire Diamonds", email: process.env.FROM_EMAIL },
+        to: [{ email }],
+        subject: "🔁 Your New OTP Code",
+        htmlContent,
+      }),
     });
 
-    res.json({ message: "OTP has been resent successfully!" });
+    const json = await response.json();
+    console.log("Brevo Resend OTP Response:", json);
+
+    if (!response.ok || !json.messageId) {
+      throw new Error(`Brevo API error: ${JSON.stringify(json)}`);
+    }
+
+    res.json({ message: "OTP resent successfully via Brevo!" });
+
   } catch (error) {
+    console.error("Resend OTP Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // ✅ Update Password
 exports.updatePassword = async (req, res) => {
