@@ -21,12 +21,19 @@ require("dotenv").config();
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
-  secure: false, // must be false for Brevo
+  secure: false,
   auth: {
     user: process.env.BREVO_EMAIL,
     pass: process.env.BREVO_SMTP_KEY,
-  },
+  },  
+  tls: {
+    rejectUnauthorized: false
+  }
 });
+
+console.log("Using BREVO_EMAIL:", process.env.BREVO_EMAIL);
+console.log("SMTP key length:", process.env.BREVO_SMTP_KEY?.length);
+
 // Verify SMTP (optional but useful)
 transporter.verify((err, success) => {
   if (err) {
