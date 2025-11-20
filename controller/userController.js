@@ -10,22 +10,21 @@ require("dotenv").config();
 
 // ✅ Secure & Correct SMTP Config
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use TLS
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, 
   auth: {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
   },
-  // tls: {
-  //   rejectUnauthorized: false,
-  // },
+  tls: {
+    rejectUnauthorized: false,
+  },
 });
 
 // ✅ Send OTP
 exports.sendOtp = async (req, res) => {
-
   try {
     const { email } = req.body;
 
@@ -72,7 +71,6 @@ exports.sendOtp = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-
 };
 exports.verifyOtp = async (req, res, next) => {
   try {
@@ -93,7 +91,9 @@ exports.verifyOtp = async (req, res, next) => {
 
     // Check if OTP exists and verify if it's expired
     if (!user.otp || expiryTime < new Date()) {
-      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please request a new one." });
     }
 
     // Check if OTP matches
@@ -120,7 +120,9 @@ exports.registerUser = async (req, res) => {
     const userMail = await UserMail.findOne({ email });
 
     if (!userMail) {
-      return res.status(400).json({ error: "Email not found. Please verify your email first." });
+      return res
+        .status(400)
+        .json({ error: "Email not found. Please verify your email first." });
     }
 
     // Hash password
@@ -136,7 +138,7 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({
       message: "User registered successfully!",
-      data: { name: newUser.name, lastname: newUser.lastname, },
+      data: { name: newUser.name, lastname: newUser.lastname },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -156,7 +158,6 @@ exports.loginUser = async (req, res) => {
     console.log("UserMail Found:", userMail);
     console.log("Searching User by _id:", userMail._id);
 
-
     // Step 2: Find corresponding user in User collection
     console.log("Searching for User with emailId._id:", userMail._id);
     const user = await User.findOne({ emailId: userMail._id });
@@ -175,18 +176,16 @@ exports.loginUser = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
     // Step 4: Generate JWT token
-    const token = jwt.sign({ userId: user._id, email: email }, process.env.JWT_SECRET);
+    const token = jwt.sign(
+      { userId: user._id, email: email },
+      process.env.JWT_SECRET
+    );
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-
-
-
-
 
 // ✅ Resend OTP
 exports.resendOtp = async (req, res) => {
@@ -232,7 +231,8 @@ exports.updatePassword = async (req, res) => {
 
     // Check if old password matches
     const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Old password is incorrect" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Old password is incorrect" });
 
     // Hash new password
     user.password = await bcrypt.hash(newPassword, 10);
@@ -247,7 +247,9 @@ exports.updatePassword = async (req, res) => {
 // ✅ Get All Users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("emailId", "email").select("-password");
+    const users = await User.find()
+      .populate("emailId", "email")
+      .select("-password");
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -257,7 +259,9 @@ exports.getAllUsers = async (req, res) => {
 // ✅ Get User By ID
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate("emailId", "email").select("-password");
+    const user = await User.findById(req.params.id)
+      .populate("emailId", "email")
+      .select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json(user);
   } catch (error) {
@@ -329,7 +333,9 @@ exports.verifyOtpForReset = async (req, res) => {
 
     // Check OTP validity
     if (!user.otp || user.otpExpires < new Date()) {
-      return res.status(400).json({ message: "OTP expired. Request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Request a new one." });
     }
 
     if (user.otp !== otp) {
@@ -353,7 +359,10 @@ exports.resetPassword = async (req, res) => {
 
     // Find user in User collection using emailId
     const user = await User.findOne({ emailId: userMail._id });
-    if (!user) return res.status(404).json({ message: "User not found in main database" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ message: "User not found in main database" });
 
     // Hash new password
     user.password = await bcrypt.hash(newPassword, 10);
