@@ -10,17 +10,17 @@ require("dotenv").config();
 
 // ✅ Secure & Correct SMTP Config
 const transporter = nodemailer.createTransport({
-  // service: "gmail",
- host: '142.251.32.108',
-  port: 587,
-  secure: false, 
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // IMPORTANT
   auth: {
     user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASSWORD, // app password only!
   },
-  tls: {
-    rejectUnauthorized: false,
-  },
+});
+transporter.verify((err, success) => {
+  if (err) console.log("SMTP Connection Error:", err);
+  else console.log("SMTP Server Connected:", success);
 });
 
 // ✅ Send OTP
