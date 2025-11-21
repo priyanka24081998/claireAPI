@@ -190,6 +190,58 @@ exports.deleteProduct = async (req, res) => {
 };
 
 // ✅ Update Product
+// exports.updateProduct = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     // ✅ Ensure product exists
+//     const productExists = await PM.findById(id);
+//     if (!productExists) {
+//       return res
+//         .status(404)
+//         .json({ status: "fail", message: "Product not found" });
+//     }
+
+//     const data = req.body;
+
+//     // ✅ Handle image upload if new image is provided
+//     if (req.files?.images) {
+//       const imageUploadPromises = req.files.images.map(async (file) => {
+//         const result = await cloudinary.uploader.upload(file.path, {
+//           folder: "claireimages/",
+//           resource_type: "image",
+//         });
+//         return result.secure_url;
+//       });
+
+//       data.images = await Promise.all(imageUploadPromises);
+//     }
+
+//     // ✅ Handle additional files (videos)
+//     if (req.files?.videos) {
+//       data.videos = req.files.videos.map((file) => file.filename);
+//     }
+
+//     // ✅ Update product
+//     const updatedProduct = await PM.findByIdAndUpdate(id, data, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "Product updated successfully",
+//       data: updatedProduct,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       status: "fail",
+//       message: error.message,
+//     });
+//   }
+// };
+  
+
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -204,22 +256,46 @@ exports.updateProduct = async (req, res) => {
 
     const data = req.body;
 
-    // ✅ Handle image upload if new image is provided
+    // ✅ Upload IMAGES (same logic as createProduct)
     if (req.files?.images) {
-      const imageUploadPromises = req.files.images.map(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: "claireimages/",
-          resource_type: "image",
-        });
-        return result.secure_url;
-      });
+      const uploadedImages = await Promise.all(
+        req.files.images
+          .filter((file) => file.mimetype.startsWith("image/"))
+          .map(async (file) => {
+            const safePath = file.path.replace(/\\/g, "/"); // Windows fix
+            console.log("Updating image:", safePath);
 
-      data.images = await Promise.all(imageUploadPromises);
+            const up = await cloudinary.uploader.upload(safePath, {
+              folder: "claireimages/",
+              resource_type: "image",
+            });
+
+            return up.secure_url;
+          })
+      );
+
+      data.images = uploadedImages;
     }
 
-    // ✅ Handle additional files (videos)
+    // ✅ Upload VIDEOS (same logic as createProduct)
     if (req.files?.videos) {
-      data.videos = req.files.videos.map((file) => file.filename);
+      const uploadedVideos = await Promise.all(
+        req.files.videos
+          .filter((file) => file.mimetype.startsWith("video/"))
+          .map(async (file) => {
+            const safePath = file.path.replace(/\\/g, "/"); // Windows fix
+            console.log("Updating video:", safePath);
+
+            const up = await cloudinary.uploader.upload(safePath, {
+              folder: "claireimages/",
+              resource_type: "video",
+            });
+
+            return up.secure_url;
+          })
+      );
+
+      data.videos = uploadedVideos;
     }
 
     // ✅ Update product
