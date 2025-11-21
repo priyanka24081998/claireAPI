@@ -10,52 +10,120 @@ cloudinary.config({
 }); 
 
 // ✅ Create Product
+// exports.createProduct = async (req, res) => {
+//   try {
+//     const data = req.body;
+
+//     const file = req.files.images
+//     console.log("file ==> ",file);
+    
+//     const stData = file.map(async(file) => {
+//       // console.log(file);
+//           const upload = await cloudinary.uploader.upload(file.path , {
+//       folder : 'claireimages/',
+//       public_id : file.filename,
+//       resource_type : 'image'
+//     })
+//     // console.log("check all ==> ",upload);
+    
+//     return  upload.secure_url
+//     })
+
+//       const uploadedUrls = await Promise.all(stData);
+//     data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
+//     console.log("All uploaded URLs:", data.images);
+
+//     // console.log("all data.images ==> ",data.images);
+    
+
+
+//     // if (req.files?.videos) {
+//     //   data.videos = req.files.videos.map((file) => file.filename);
+//     // }
+
+//     // ✅ Save product in DB
+//     const product = await PM.create(data);
+
+//     res.status(201).json({
+//       status: "success",
+//       message: "Product created successfully",
+//       data: product,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       status: "fail",
+//       message: error.message,
+//     });
+//   }
+// };
+
 exports.createProduct = async (req, res) => {
   try {
     const data = req.body;
 
-    const file = req.files.images
-    console.log("file ==> ",file);
-    
-    const stData = file.map(async(file) => {
-      // console.log(file);
-          const upload = await cloudinary.uploader.upload(file.path , {
-      folder : 'claireimages/',
-      public_id : file.filename,
-      resource_type : 'image'
-    })
-    // console.log("check all ==> ",upload);
-    
-    return  upload.secure_url
-    })
+    /* -------------------------------------
+       1️⃣ UPLOAD IMAGES TO CLOUDINARY
+    ------------------------------------- */
+    let imageUrls = [];
 
-      const uploadedUrls = await Promise.all(stData);
-    data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
-    console.log("All uploaded URLs:", data.images);
+    if (req.files?.images) {
+      const images = Array.isArray(req.files.images)
+        ? req.files.images
+        : [req.files.images];
 
-    // console.log("all data.images ==> ",data.images);
-    
+      const imagePromises = images.map(async (file) => {
+        const upload = await cloudinary.uploader.upload(file.path, {
+          folder: "claireimages/",
+          resource_type: "image",
+        });
+        return upload.secure_url;
+      });
 
+      imageUrls = await Promise.all(imagePromises);
+      data.images = imageUrls;
+    }
 
-    // if (req.files?.videos) {
-    //   data.videos = req.files.videos.map((file) => file.filename);
-    // }
+    /* -------------------------------------
+       2️⃣ UPLOAD VIDEOS TO CLOUDINARY
+    ------------------------------------- */
+    let videoUrls = [];
 
-    // ✅ Save product in DB
+    if (req.files?.videos) {
+      const videos = Array.isArray(req.files.videos)
+        ? req.files.videos
+        : [req.files.videos];
+
+      const videoPromises = videos.map(async (file) => {
+        const upload = await cloudinary.uploader.upload(file.path, {
+          folder: "clairevideos/",
+          resource_type: "video", // IMPORTANT
+        });
+        return upload.secure_url;
+      });
+
+      videoUrls = await Promise.all(videoPromises);
+      data.videos = videoUrls;
+    }
+
+    /* -------------------------------------
+       3️⃣ SAVE PRODUCT IN DB
+    ------------------------------------- */
     const product = await PM.create(data);
 
-    res.status(201).json({
+    return res.status(201).json({
       status: "success",
       message: "Product created successfully",
       data: product,
     });
+
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       status: "fail",
       message: error.message,
     });
   }
 };
+
 
 
 // ✅ View Products (Single or All)

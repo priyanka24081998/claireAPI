@@ -26,7 +26,7 @@ router.post(
   verifyToken, // Verify user first
   upload.fields([
     { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 3 }
+    { name: "videos", maxCount: 5 }
   ]),
   PC.createProduct
 );
@@ -47,7 +47,7 @@ router.patch(
   verifyToken, // Verify user first
   upload.fields([
     { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 3 }
+    { name: "videos", maxCount: 5 }
   ]),
   PC.updateProduct
 );
