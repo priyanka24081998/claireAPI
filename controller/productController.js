@@ -57,72 +57,62 @@ cloudinary.config({
 //   }
 // };
 
+// ✅ Create Product
 exports.createProduct = async (req, res) => {
   try {
     const data = req.body;
 
-    /* -------------------------------------
-       1️⃣ UPLOAD IMAGES TO CLOUDINARY
-    ------------------------------------- */
-    let imageUrls = [];
+    // ---------- IMAGES ----------
+    const file = req.files.images;
+    console.log("file ==> ", file);
 
-    if (req.files?.images) {
-      const images = Array.isArray(req.files.images)
-        ? req.files.images
-        : [req.files.images];
-
-      const imagePromises = images.map(async (file) => {
-        const upload = await cloudinary.uploader.upload(file.path, {
-          folder: "claireimages/",
-          resource_type: "image",
-        });
-        return upload.secure_url;
+    const stData = file.map(async (file) => {
+      const upload = await cloudinary.uploader.upload(file.path, {
+        folder: 'claireimages/',
+        public_id: file.filename,
+        resource_type: 'image', // keep this for images
       });
 
-      imageUrls = await Promise.all(imagePromises);
-      data.images = imageUrls;
-    }
+      return upload.secure_url;
+    });
 
-    /* -------------------------------------
-       2️⃣ UPLOAD VIDEOS TO CLOUDINARY
-    ------------------------------------- */
-    let videoUrls = [];
+    const uploadedUrls = await Promise.all(stData);
+    data.images = uploadedUrls.filter((url) => url !== null); // Filter out failed uploads
+    console.log("All uploaded image URLs:", data.images);
 
+    // ---------- VIDEOS ----------
     if (req.files?.videos) {
-      const videos = Array.isArray(req.files.videos)
-        ? req.files.videos
-        : [req.files.videos];
+      const videoUrls = await Promise.all(
+        req.files.videos.map(async (file) => {
+          const upload = await cloudinary.uploader.upload(file.path, {
+            folder: 'claireimages/', // same folder as images
+            public_id: file.filename,
+            resource_type: 'video', // IMPORTANT: videos need this
+          });
+          return upload.secure_url;
+        })
+      );
 
-      const videoPromises = videos.map(async (file) => {
-        const upload = await cloudinary.uploader.upload(file.path, {
-          folder: "clairevideos/",
-          resource_type: "video", // IMPORTANT
-        });
-        return upload.secure_url;
-      });
-
-      videoUrls = await Promise.all(videoPromises);
-      data.videos = videoUrls;
+      data.videos = videoUrls.filter((url) => url !== null);
+      console.log("All uploaded video URLs:", data.videos);
     }
 
-    /* -------------------------------------
-       3️⃣ SAVE PRODUCT IN DB
-    ------------------------------------- */
+    // ✅ Save product in DB
     const product = await PM.create(data);
 
-    return res.status(201).json({
+    res.status(201).json({
       status: "success",
       message: "Product created successfully",
       data: product,
     });
-
   } catch (error) {
-    return res.status(400).json({
+    res.status(400).json({
       status: "fail",
       message: error.message,
     });
   }
 };
+
 
 
 
