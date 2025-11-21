@@ -63,30 +63,36 @@ exports.createProduct = async (req, res) => {
     console.log(process.env.CLOUDINARY_CLOUD_NAME);
 
     const uploadedImages = await Promise.all(
-      (req.files.images || [])
-        .filter((file) => file.mimetype.startsWith("image/")) // <--- FIX
-        .map(async (file) => {
-          console.log("Uploading image:", file.path);
-          const up = await cloudinary.uploader.upload(file.path, {
-            folder: "claireimages/",
-            resource_type: "image",
-          });
-          return up.secure_url;
-        })
-    );
+  (req.files.images || [])
+    .filter((file) => file.mimetype.startsWith("image/")) // only images
+    .map(async (file) => {
+      const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
+      console.log("Uploading image:", safePath);
+
+      const up = await cloudinary.uploader.upload(safePath, {
+        folder: "claireimages/",
+        resource_type: "image",
+      });
+
+      return up.secure_url;
+    })
+);
 
     const uploadedVideos = await Promise.all(
-      (req.files.videos || [])
-        .filter((file) => file.mimetype.startsWith("video/")) // <--- FIX
-        .map(async (file) => {
-          console.log("Uploading video:", file.path);
-          const up = await cloudinary.uploader.upload(file.path, {
-            folder: "claireimages/",
-            resource_type: "video",
-          });
-          return up.secure_url;
-        })
-    );
+  (req.files.videos || [])
+    .filter((file) => file.mimetype.startsWith("video/")) // only videos
+    .map(async (file) => {
+      const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
+      console.log("Uploading video:", safePath);
+
+      const up = await cloudinary.uploader.upload(safePath, {
+        folder: "claireimages/",
+        resource_type: "video",
+      });
+
+      return up.secure_url;
+    })
+);
 
     req.body.images = uploadedImages;
     req.body.videos = uploadedVideos;
