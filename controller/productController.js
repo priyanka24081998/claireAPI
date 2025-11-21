@@ -7,7 +7,7 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-}); 
+});
 
 // ✅ Create Product
 // exports.createProduct = async (req, res) => {
@@ -16,7 +16,7 @@ cloudinary.config({
 
 //     const file = req.files.images
 //     console.log("file ==> ",file);
-    
+
 //     const stData = file.map(async(file) => {
 //       // console.log(file);
 //           const upload = await cloudinary.uploader.upload(file.path , {
@@ -25,7 +25,7 @@ cloudinary.config({
 //       resource_type : 'image'
 //     })
 //     // console.log("check all ==> ",upload);
-    
+
 //     return  upload.secure_url
 //     })
 
@@ -34,8 +34,6 @@ cloudinary.config({
 //     console.log("All uploaded URLs:", data.images);
 
 //     // console.log("all data.images ==> ",data.images);
-    
-
 
 //     // if (req.files?.videos) {
 //     //   data.videos = req.files.videos.map((file) => file.filename);
@@ -60,68 +58,54 @@ cloudinary.config({
 // ✅ Create Product
 exports.createProduct = async (req, res) => {
   try {
-    const data = req.body;
+    console.log("req.files", req.files);
+    console.log("req.body", req.body);
+    console.log(process.env.CLOUDINARY_CLOUD_NAME);
 
-    // ---------- IMAGES ----------
-    const file = req.files.images;
-    console.log("file ==> ", file);
-
-    const stData = file.map(async (file) => {
-      const upload = await cloudinary.uploader.upload(file.path, {
-        folder: 'claireimages/',
-        public_id: file.filename,
-        resource_type: 'image', // keep this for images
-      });
-
-      return upload.secure_url;
-    });
-
-    const uploadedUrls = await Promise.all(stData);
-    data.images = uploadedUrls.filter((url) => url !== null); // Filter out failed uploads
-    console.log("All uploaded image URLs:", data.images);
-
-    // ---------- VIDEOS ----------
-    if (req.files?.videos) {
-      const videoUrls = await Promise.all(
-        req.files.videos.map(async (file) => {
-          const upload = await cloudinary.uploader.upload(file.path, {
-            folder: 'claireimages/', // same folder as images
-            public_id: file.filename,
-            resource_type: 'video', // IMPORTANT: videos need this
+    const uploadedImages = await Promise.all(
+      (req.files.images || [])
+        .filter((file) => file.mimetype.startsWith("image/")) // <--- FIX
+        .map(async (file) => {
+          console.log("Uploading image:", file.path);
+          const up = await cloudinary.uploader.upload(file.path, {
+            folder: "claireimages/",
+            resource_type: "image",
           });
-          return upload.secure_url;
+          return up.secure_url;
         })
-      );
+    );
 
-      data.videos = videoUrls.filter((url) => url !== null);
-      console.log("All uploaded video URLs:", data.videos);
-    }
+    const uploadedVideos = await Promise.all(
+      (req.files.videos || [])
+        .filter((file) => file.mimetype.startsWith("video/")) // <--- FIX
+        .map(async (file) => {
+          console.log("Uploading video:", file.path);
+          const up = await cloudinary.uploader.upload(file.path, {
+            folder: "claireimages/",
+            resource_type: "video",
+          });
+          return up.secure_url;
+        })
+    );
 
-    // ✅ Save product in DB
-    const product = await PM.create(data);
+    req.body.images = uploadedImages;
+    req.body.videos = uploadedVideos;
 
-    res.status(201).json({
-      status: "success",
-      message: "Product created successfully",
-      data: product,
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      message: error.message,
-    });
+    const product = await PM.create(req.body);
+    console.log("Saved product:", product);
+    res.status(201).json({ status: "success", data: product });
+  } catch (err) {
+    console.log("ERROR CREATING PRODUCT:", err);
+    res.status(400).json({ status: "fail", message: err.message });
   }
 };
-
-
-
 
 // ✅ View Products (Single or All)
 exports.viewProducts = async (req, res) => {
   try {
     const { id } = req.params;
     console.log(req.params.id);
-    
+
     if (id) {
       // ✅ Get single product
       const product = await PM.findById(id)
@@ -129,7 +113,9 @@ exports.viewProducts = async (req, res) => {
         .populate("subCategoryId", "subCategoryName");
 
       if (!product) {
-        return res.status(404).json({ status: "fail", message: "Product not found" });
+        return res
+          .status(404)
+          .json({ status: "fail", message: "Product not found" });
       }
 
       return res.status(200).json({ status: "success", data: product });
@@ -153,26 +139,26 @@ exports.viewProducts = async (req, res) => {
   }
 };
 
-exports.viewProductsbyID = async (req,res) => {
-   try{  
-  
-  const id = req.params.id
-     const product = await PM.findById(id)
-     .populate("categoryId", "categoryName")
-     .populate("subCategoryId", "subCategoryName");
-     if (!product) {
-      return res.status(404).json({ status: "fail", message: "Product not found" });
+exports.viewProductsbyID = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const product = await PM.findById(id)
+      .populate("categoryId", "categoryName")
+      .populate("subCategoryId", "subCategoryName");
+    if (!product) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Product not found" });
     }
-    
-     res.status(200).json({ status: "success", data: product });}
-     catch (error) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
-    }
-  
-}
+
+    res.status(200).json({ status: "success", data: product });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
+};
 
 // ✅ Delete Product
 exports.deleteProduct = async (req, res) => {
@@ -181,10 +167,14 @@ exports.deleteProduct = async (req, res) => {
     const product = await PM.findByIdAndDelete(id);
 
     if (!product) {
-      return res.status(404).json({ status: "fail", message: "Product not found" });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Product not found" });
     }
 
-    res.status(200).json({ status: "success", message: "Product deleted successfully" });
+    res
+      .status(200)
+      .json({ status: "success", message: "Product deleted successfully" });
   } catch (error) {
     res.status(400).json({
       status: "fail",
@@ -201,7 +191,9 @@ exports.updateProduct = async (req, res) => {
     // ✅ Ensure product exists
     const productExists = await PM.findById(id);
     if (!productExists) {
-      return res.status(404).json({ status: "fail", message: "Product not found" });
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Product not found" });
     }
 
     const data = req.body;
@@ -225,7 +217,10 @@ exports.updateProduct = async (req, res) => {
     }
 
     // ✅ Update product
-    const updatedProduct = await PM.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+    const updatedProduct = await PM.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    });
 
     res.status(200).json({
       status: "success",
