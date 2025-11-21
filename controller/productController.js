@@ -274,7 +274,8 @@ exports.updateProduct = async (req, res) => {
           })
       );
 
-      data.images = uploadedImages;
+      // keep old + new images
+      data.images = [...productExists.images, ...newImages];
     }
 
     // ✅ Upload VIDEOS (same logic as createProduct)
@@ -295,7 +296,7 @@ exports.updateProduct = async (req, res) => {
           })
       );
 
-      data.videos = uploadedVideos;
+      data.videos = [...productExists.videos, ...newVideos];
     }
 
     // ✅ Update product
