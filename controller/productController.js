@@ -246,61 +246,74 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ Ensure product exists
-    const productExists = await PM.findById(id);
-    if (!productExists) {
-      return res
-        .status(404)
-        .json({ status: "fail", message: "Product not found" });
+    const product = await PM.findById(id);
+    if (!product) {
+      return res.status(404).json({ status: "fail", message: "Product not found" });
     }
 
-    const data = req.body;
+    // -----------------------------
+    // 1️⃣ Get existing images/videos sent by frontend
+    // -----------------------------
+    let existingImages = req.body["existingImages[]"];
+    if (!existingImages) existingImages = [];
+    if (!Array.isArray(existingImages)) existingImages = [existingImages];
 
-    // ✅ Upload IMAGES (same logic as createProduct)
-    if (req.files?.images) {
-      const uploadedImages = await Promise.all(
-        req.files.images
-          .filter((file) => file.mimetype.startsWith("image/"))
-          .map(async (file) => {
-            const safePath = file.path.replace(/\\/g, "/"); // Windows fix
-            console.log("Updating image:", safePath);
+    let existingVideos = req.body["existingVideos[]"];
+    if (!existingVideos) existingVideos = [];
+    if (!Array.isArray(existingVideos)) existingVideos = [existingVideos];
 
-            const up = await cloudinary.uploader.upload(safePath, {
-              folder: "claireimages/",
-              resource_type: "image",
-            });
+    // -----------------------------
+    // 2️⃣ Upload new IMAGES (filtered)
+    // -----------------------------
+    const newImages = await Promise.all(
+      (req.files?.images || [])
+        .filter((file) => file.mimetype.startsWith("image/"))
+        .map(async (file) => {
+          const up = await cloudinary.uploader.upload(file.path, {
+            folder: "claireimages/",
+            resource_type: "image",
+          });
+          return up.secure_url;
+        })
+    );
 
-            return up.secure_url;
-          })
-      );
+    // -----------------------------
+    // 3️⃣ Upload new VIDEOS (filtered)
+    // -----------------------------
+    const newVideos = await Promise.all(
+      (req.files?.videos || [])
+        .filter((file) => file.mimetype.startsWith("video/"))
+        .map(async (file) => {
+          const up = await cloudinary.uploader.upload(file.path, {
+            folder: "claireimages/",
+            resource_type: "video",
+          });
+          return up.secure_url;
+        })
+    );
 
-      // keep old + new images
-      data.images = [...productExists.images, ...newImages];
-    }
+    // -----------------------------
+    // 4️⃣ Final image & video arrays
+    // -----------------------------
+    const finalImages = [...existingImages, ...newImages];
+    const finalVideos = [...existingVideos, ...newVideos];
 
-    // ✅ Upload VIDEOS (same logic as createProduct)
-    if (req.files?.videos) {
-      const uploadedVideos = await Promise.all(
-        req.files.videos
-          .filter((file) => file.mimetype.startsWith("video/"))
-          .map(async (file) => {
-            const safePath = file.path.replace(/\\/g, "/"); // Windows fix
-            console.log("Updating video:", safePath);
+    // -----------------------------
+    // 5️⃣ Apply all fields to product
+    // -----------------------------
+    const updateData = {
+      ...req.body,
+      images: finalImages,
+      videos: finalVideos,
+    };
 
-            const up = await cloudinary.uploader.upload(safePath, {
-              folder: "claireimages/",
-              resource_type: "video",
-            });
+    delete updateData["existingImages[]"];
+    delete updateData["existingVideos[]"];
 
-            return up.secure_url;
-          })
-      );
-
-      data.videos = [...productExists.videos, ...newVideos];
-    }
-
-    // ✅ Update product
-    const updatedProduct = await PM.findByIdAndUpdate(id, data, {
+    // -----------------------------
+    // 6️⃣ Update in MongoDB
+    // -----------------------------
+    const updatedProduct = await PM.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
@@ -310,10 +323,9 @@ exports.updateProduct = async (req, res) => {
       message: "Product updated successfully",
       data: updatedProduct,
     });
-  } catch (error) {
-    res.status(400).json({
-      status: "fail",
-      message: error.message,
-    });
+
+  } catch (err) {
+    console.error("UPDATE ERROR:", err);
+    res.status(400).json({ status: "fail", message: err.message });
   }
 };
