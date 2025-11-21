@@ -245,87 +245,48 @@ exports.deleteProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-
     const product = await PM.findById(id);
-    if (!product) {
-      return res.status(404).json({ status: "fail", message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    const data = req.body;
+
+    // Handle images
+    let uploadedImages = [];
+    if (req.files?.images) {
+      uploadedImages = await Promise.all(
+        req.files.images.map((file) =>
+          cloudinary.uploader.upload(file.path, { folder: "claireimages/" }).then(u => u.secure_url)
+        )
+      );
     }
+    // Merge with existingImages from frontend
+    const finalImages = [...(data.existingImages || []), ...uploadedImages];
 
-    // -----------------------------
-    // 1️⃣ Get existing images/videos sent by frontend
-    // -----------------------------
-    let existingImages = req.body["existingImages[]"];
-    if (!existingImages) existingImages = [];
-    if (!Array.isArray(existingImages)) existingImages = [existingImages];
+    // Handle videos
+    let uploadedVideos = [];
+    if (req.files?.videos) {
+      uploadedVideos = await Promise.all(
+        req.files.videos.map((file) =>
+          cloudinary.uploader.upload(file.path, { folder: "claireimages/", resource_type: "video" }).then(u => u.secure_url)
+        )
+      );
+    }
+    const finalVideos = [...(data.existingVideos || []), ...uploadedVideos];
 
-    let existingVideos = req.body["existingVideos[]"];
-    if (!existingVideos) existingVideos = [];
-    if (!Array.isArray(existingVideos)) existingVideos = [existingVideos];
-
-    // -----------------------------
-    // 2️⃣ Upload new IMAGES (filtered)
-    // -----------------------------
-    const newImages = await Promise.all(
-      (req.files?.images || [])
-        .filter((file) => file.mimetype.startsWith("image/"))
-        .map(async (file) => {
-          const up = await cloudinary.uploader.upload(file.path, {
-            folder: "claireimages/",
-            resource_type: "image",
-          });
-          return up.secure_url;
-        })
+    // Update product
+    const updatedProduct = await PM.findByIdAndUpdate(
+      id,
+      {
+        ...data,
+        images: finalImages,
+        videos: finalVideos
+      },
+      { new: true, runValidators: true }
     );
 
-    // -----------------------------
-    // 3️⃣ Upload new VIDEOS (filtered)
-    // -----------------------------
-    const newVideos = await Promise.all(
-      (req.files?.videos || [])
-        .filter((file) => file.mimetype.startsWith("video/"))
-        .map(async (file) => {
-          const up = await cloudinary.uploader.upload(file.path, {
-            folder: "claireimages/",
-            resource_type: "video",
-          });
-          return up.secure_url;
-        })
-    );
-
-    // -----------------------------
-    // 4️⃣ Final image & video arrays
-    // -----------------------------
-    const finalImages = [...existingImages, ...newImages];
-    const finalVideos = [...existingVideos, ...newVideos];
-
-    // -----------------------------
-    // 5️⃣ Apply all fields to product
-    // -----------------------------
-    const updateData = {
-      ...req.body,
-      images: finalImages,
-      videos: finalVideos,
-    };
-
-    delete updateData["existingImages[]"];
-    delete updateData["existingVideos[]"];
-
-    // -----------------------------
-    // 6️⃣ Update in MongoDB
-    // -----------------------------
-    const updatedProduct = await PM.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "Product updated successfully",
-      data: updatedProduct,
-    });
-
+    res.status(200).json({ status: "success", data: updatedProduct });
   } catch (err) {
-    console.error("UPDATE ERROR:", err);
-    res.status(400).json({ status: "fail", message: err.message });
+    console.log(err);
+    res.status(500).json({ status: "fail", message: err.message });
   }
 };
