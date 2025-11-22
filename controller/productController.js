@@ -96,6 +96,37 @@ exports.createProduct = async (req, res) => {
 
     req.body.images = uploadedImages;
     req.body.videos = uploadedVideos;
+    
+    req.body.price = {
+      "10k_yellow_gold": req.body["10k_yellow_gold"],
+      "10k_rose_gold": req.body["10k_rose_gold"],
+      "10k_white_gold": req.body["10k_white_gold"],
+
+      "14k_yellow_gold": req.body["14k_yellow_gold"],
+      "14k_rose_gold": req.body["14k_rose_gold"],
+      "14k_white_gold": req.body["14k_white_gold"],
+
+      "18k_yellow_gold": req.body["18k_yellow_gold"],
+      "18k_rose_gold": req.body["18k_rose_gold"],
+      "18k_white_gold": req.body["18k_white_gold"],
+
+      silver: req.body.silver,
+      platinum: req.body.platinum,
+    };
+
+    delete req.body["10k_yellow_gold"];
+    delete req.body["10k_rose_gold"];
+    delete req.body["10k_white_gold"];
+    delete req.body["14k_yellow_gold"];
+    delete req.body["14k_rose_gold"];
+    delete req.body["14k_white_gold"];
+    delete req.body["18k_yellow_gold"];
+    delete req.body["18k_rose_gold"];
+    delete req.body["18k_white_gold"];
+    delete req.body["silver"];
+    delete req.body["platinum"];
+
+
 
     const product = await PM.create(req.body);
     console.log("Saved product:", product);
@@ -249,6 +280,36 @@ exports.updateProduct = async (req, res) => {
     if (!product) return res.status(404).json({ message: "Product not found" });
 
     const data = req.body;
+
+     data.price = {
+      "10k_yellow_gold": data["10k_yellow_gold"],
+      "10k_rose_gold": data["10k_rose_gold"],
+      "10k_white_gold": data["10k_white_gold"],
+
+      "14k_yellow_gold": data["14k_yellow_gold"],
+      "14k_rose_gold": data["14k_rose_gold"],
+      "14k_white_gold": data["14k_white_gold"],
+
+      "18k_yellow_gold": data["18k_yellow_gold"],
+      "18k_rose_gold": data["18k_rose_gold"],
+      "18k_white_gold": data["18k_white_gold"],
+
+      silver: data.silver,
+      platinum: data.platinum,
+    };
+
+    // Remove raw form fields from body
+    delete data["10k_yellow_gold"];
+    delete data["10k_rose_gold"];
+    delete data["10k_white_gold"];
+    delete data["14k_yellow_gold"];
+    delete data["14k_rose_gold"];
+    delete data["14k_white_gold"];
+    delete data["18k_yellow_gold"];
+    delete data["18k_rose_gold"];
+    delete data["18k_white_gold"];
+    delete data["silver"];
+    delete data["platinum"];
 
     // Handle images
     let uploadedImages = [];
