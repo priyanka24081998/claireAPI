@@ -29,7 +29,6 @@ const productSchema = new Schema({
   },
   metal: {
     type: String,
-
     required: true,
   },
   diamond: {

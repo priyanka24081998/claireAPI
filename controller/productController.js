@@ -63,40 +63,43 @@ exports.createProduct = async (req, res) => {
     console.log(process.env.CLOUDINARY_CLOUD_NAME);
 
     const uploadedImages = await Promise.all(
-  (req.files.images || [])
-    .filter((file) => file.mimetype.startsWith("image/")) // only images
-    .map(async (file) => {
-      const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
-      console.log("Uploading image:", safePath);
+      (req.files.images || [])
+        .filter((file) => file.mimetype.startsWith("image/")) // only images
+        .map(async (file) => {
+          const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
+          console.log("Uploading image:", safePath);
 
-      const up = await cloudinary.uploader.upload(safePath, {
-        folder: "claireimages/",
-        resource_type: "image",
-      });
+          const up = await cloudinary.uploader.upload(safePath, {
+            folder: "claireimages/",
+            resource_type: "image",
+          });
 
-      return up.secure_url;
-    })
-);
+          return up.secure_url;
+        })
+    );
 
     const uploadedVideos = await Promise.all(
-  (req.files.videos || [])
-    .filter((file) => file.mimetype.startsWith("video/")) // only videos
-    .map(async (file) => {
-      const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
-      console.log("Uploading video:", safePath);
+      (req.files.videos || [])
+        .filter((file) => file.mimetype.startsWith("video/")) // only videos
+        .map(async (file) => {
+          const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
+          console.log("Uploading video:", safePath);
 
-      const up = await cloudinary.uploader.upload(safePath, {
-        folder: "claireimages/",
-        resource_type: "video",
-      });
+          const up = await cloudinary.uploader.upload(safePath, {
+            folder: "claireimages/",
+            resource_type: "video",
+          });
 
-      return up.secure_url;
-    })
-);
+          return {
+            url: up.secure_url,
+            public_id: up.public_id,
+          };
+        })
+    );
 
     req.body.images = uploadedImages;
     req.body.videos = uploadedVideos;
-    
+
     req.body.price = {
       "10k_yellow_gold": req.body["10k_yellow_gold"],
       "10k_rose_gold": req.body["10k_rose_gold"],
@@ -125,8 +128,6 @@ exports.createProduct = async (req, res) => {
     delete req.body["18k_white_gold"];
     delete req.body["silver"];
     delete req.body["platinum"];
-
-
 
     const product = await PM.create(req.body);
     console.log("Saved product:", product);
@@ -271,7 +272,6 @@ exports.deleteProduct = async (req, res) => {
 //     });
 //   }
 // };
-  
 
 exports.updateProduct = async (req, res) => {
   try {
@@ -281,7 +281,7 @@ exports.updateProduct = async (req, res) => {
 
     const data = req.body;
 
-     data.price = {
+    data.price = {
       "10k_yellow_gold": data["10k_yellow_gold"],
       "10k_rose_gold": data["10k_rose_gold"],
       "10k_white_gold": data["10k_white_gold"],
@@ -316,7 +316,9 @@ exports.updateProduct = async (req, res) => {
     if (req.files?.images) {
       uploadedImages = await Promise.all(
         req.files.images.map((file) =>
-          cloudinary.uploader.upload(file.path, { folder: "claireimages/" }).then(u => u.secure_url)
+          cloudinary.uploader
+            .upload(file.path, { folder: "claireimages/" })
+            .then((u) => u.secure_url)
         )
       );
     }
@@ -328,7 +330,12 @@ exports.updateProduct = async (req, res) => {
     if (req.files?.videos) {
       uploadedVideos = await Promise.all(
         req.files.videos.map((file) =>
-          cloudinary.uploader.upload(file.path, { folder: "claireimages/", resource_type: "video" }).then(u => u.secure_url)
+          cloudinary.uploader
+            .upload(file.path, {
+              folder: "claireimages/",
+              resource_type: "video",
+            })
+            .then((u) => u.secure_url)
         )
       );
     }
@@ -340,7 +347,7 @@ exports.updateProduct = async (req, res) => {
       {
         ...data,
         images: finalImages,
-        videos: finalVideos
+        videos: finalVideos,
       },
       { new: true, runValidators: true }
     );
