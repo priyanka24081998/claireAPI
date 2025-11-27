@@ -17,7 +17,9 @@ var productRouter = require('./routes/product');
 var categoryRouter = require('./routes/category');
 var subCategoryRouter = require('./routes/subCategory');
 var userMailRouter = require('./routes/userMail');
-var sliderRouter = require('./routes/slideImgRoutes')
+var sliderRouter = require('./routes/slideImgRoutes');
+var currencyRoute = require('./routes/currency'); // path to currency.js
+
 
 const mongoose = require('mongoose');
 const mongoURI = process.env.MONGODB_URI;
@@ -61,7 +63,8 @@ app.use('/category',categoryRouter);
 app.use('/subCategory',subCategoryRouter);
 app.use('/usermail',userMailRouter)
 app.use("/auth", authRoutes);
-app.use('/slider',sliderRouter)
+app.use('/slider',sliderRouter);
+app.use('/currency',currencyRoute);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
