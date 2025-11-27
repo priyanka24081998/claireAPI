@@ -69,7 +69,10 @@ const productSchema = new Schema({
 
   clarity: {
     type: String,
-
+    required: true,
+  },
+  color:{
+    type: String,
     required: true,
   },
   createdAt: {
