@@ -72,7 +72,7 @@ router.patch(
   "/updateProduct/:id",
   verifyToken, // Verify user first
   upload.fields([
-    { name: "images", maxCount: 10 },
+    { name: "images", maxCount: 15 },
     { name: "videos", maxCount: 5 }
   ]),
   PC.updateProduct
