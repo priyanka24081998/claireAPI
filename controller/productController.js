@@ -9,53 +9,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Create Product
-// exports.createProduct = async (req, res) => {
-//   try {
-//     const data = req.body;
 
-//     const file = req.files.images
-//     console.log("file ==> ",file);
-
-//     const stData = file.map(async(file) => {
-//       // console.log(file);
-//           const upload = await cloudinary.uploader.upload(file.path , {
-//       folder : 'claireimages/',
-//       public_id : file.filename,
-//       resource_type : 'image'
-//     })
-//     // console.log("check all ==> ",upload);
-
-//     return  upload.secure_url
-//     })
-
-//       const uploadedUrls = await Promise.all(stData);
-//     data.images = uploadedUrls.filter(url => url !== null); // Filter out failed uploads
-//     console.log("All uploaded URLs:", data.images);
-
-//     // console.log("all data.images ==> ",data.images);
-
-//     // if (req.files?.videos) {
-//     //   data.videos = req.files.videos.map((file) => file.filename);
-//     // }
-
-//     // ✅ Save product in DB
-//     const product = await PM.create(data);
-
-//     res.status(201).json({
-//       status: "success",
-//       message: "Product created successfully",
-//       data: product,
-//     });
-//   } catch (error) {
-//     res.status(400).json({
-//       status: "fail",
-//       message: error.message,
-//     });
-//   }
-// };
-
-// ✅ Create Product
 exports.createProduct = async (req, res) => {
   try {
     console.log("req.files", req.files);
