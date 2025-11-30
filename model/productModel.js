@@ -49,11 +49,13 @@ const productSchema = new Schema({
       type: String,
     },
   ],
-  videos: [
-    {
-      type: String,
-    },
-  ],
+ videos: [
+  {
+    url: { type: String },
+    public_id: { type: String }
+  }
+]
+,
 
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
