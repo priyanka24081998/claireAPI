@@ -272,14 +272,13 @@ exports.updateProduct = async (req, res) => {
         req.files.images.map((file) =>
           cloudinary.uploader
             .upload(file.path, { folder: "claireimages/" })
-            .then((u) => u.secure_url)
+            .then((u) => ({ url: u.secure_url, public_id: u.public_id }))
         )
       );
     }
-    // Merge with existingImages from frontend
     const finalImages = [...(data.existingImages || []), ...uploadedImages];
 
-    // Handle videos
+    // Handle videos ✅
     let uploadedVideos = [];
     if (req.files?.videos) {
       uploadedVideos = await Promise.all(
@@ -289,7 +288,7 @@ exports.updateProduct = async (req, res) => {
               folder: "claireimages/",
               resource_type: "video",
             })
-            .then((u) => u.secure_url)
+            .then((u) => ({ url: u.secure_url, public_id: u.public_id }))
         )
       );
     }
@@ -312,3 +311,4 @@ exports.updateProduct = async (req, res) => {
     res.status(500).json({ status: "fail", message: err.message });
   }
 };
+
