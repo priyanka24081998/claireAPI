@@ -235,6 +235,7 @@ exports.updateProduct = async (req, res) => {
 
     const data = req.body;
 
+    // Map price fields
     data.price = {
       "10k_yellow_gold": data["10k_yellow_gold"],
       "10k_rose_gold": data["10k_rose_gold"],
@@ -252,47 +253,61 @@ exports.updateProduct = async (req, res) => {
       platinum: data.platinum,
     };
 
-    // Remove raw form fields from body
-    delete data["10k_yellow_gold"];
-    delete data["10k_rose_gold"];
-    delete data["10k_white_gold"];
-    delete data["14k_yellow_gold"];
-    delete data["14k_rose_gold"];
-    delete data["14k_white_gold"];
-    delete data["18k_yellow_gold"];
-    delete data["18k_rose_gold"];
-    delete data["18k_white_gold"];
-    delete data["silver"];
-    delete data["platinum"];
+    // Remove raw price fields
+    [
+      "10k_yellow_gold","10k_rose_gold","10k_white_gold",
+      "14k_yellow_gold","14k_rose_gold","14k_white_gold",
+      "18k_yellow_gold","18k_rose_gold","18k_white_gold",
+      "silver","platinum"
+    ].forEach(f => delete data[f]);
 
-    // Handle images
+    // Handle new images (upload to Cloudinary)
     let uploadedImages = [];
     if (req.files?.images) {
       uploadedImages = await Promise.all(
         req.files.images.map((file) =>
-          cloudinary.uploader
-            .upload(file.path, { folder: "claireimages/" })
-            .then((u) => ({ url: u.secure_url, public_id: u.public_id }))
+          cloudinary.uploader.upload(file.path, { folder: "claireimages/" })
+            .then(u => u.secure_url) // <-- only URL as string
         )
       );
     }
-    const finalImages = [...(data.existingImages || []), ...uploadedImages];
 
-    // Handle videos ✅
+    // Existing images from form (JSON string)
+    let existingImages = [];
+    if (data.existingImages) {
+      try {
+        existingImages = JSON.parse(data.existingImages); // array of strings
+      } catch (err) {
+        existingImages = [];
+      }
+    }
+
+    const finalImages = [...existingImages, ...uploadedImages]; // only strings
+
+    // Handle videos
     let uploadedVideos = [];
     if (req.files?.videos) {
       uploadedVideos = await Promise.all(
         req.files.videos.map((file) =>
-          cloudinary.uploader
-            .upload(file.path, {
-              folder: "claireimages/",
-              resource_type: "video",
-            })
-            .then((u) => ({ url: u.secure_url, public_id: u.public_id }))
+          cloudinary.uploader.upload(file.path, {
+            folder: "claireimages/",
+            resource_type: "video",
+          }).then(u => ({ url: u.secure_url, public_id: u.public_id }))
         )
       );
     }
-    const finalVideos = [...(data.existingVideos || []), ...uploadedVideos];
+
+    // Existing videos from form (JSON string)
+    let existingVideos = [];
+    if (data.existingVideos) {
+      try {
+        existingVideos = JSON.parse(data.existingVideos); // array of objects
+      } catch (err) {
+        existingVideos = [];
+      }
+    }
+
+    const finalVideos = [...existingVideos, ...uploadedVideos];
 
     // Update product
     const updatedProduct = await PM.findByIdAndUpdate(
@@ -307,8 +322,7 @@ exports.updateProduct = async (req, res) => {
 
     res.status(200).json({ status: "success", data: updatedProduct });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ status: "fail", message: err.message });
   }
 };
-
