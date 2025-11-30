@@ -44,12 +44,11 @@ const productSchema = new Schema({
     required: true,
   },
 
- images: [
-  {
-    url: { type: String, required: true },
-    public_id: { type: String, required: true }
-  }
-],
+  images: [
+    {
+      type: String,
+    },
+  ],
  videos: [
   {
     url: { type: String },
