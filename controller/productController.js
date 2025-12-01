@@ -326,3 +326,4 @@ exports.updateProduct = async (req, res) => {
     res.status(500).json({ status: "fail", message: err.message });
   }
 };
+

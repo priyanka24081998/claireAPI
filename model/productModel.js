@@ -81,6 +81,8 @@ const productSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+    draft: Boolean, // true for draft, false for published
+
 });
 
 const Product = mongoose.model("Product", productSchema);
