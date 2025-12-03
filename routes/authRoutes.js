@@ -24,7 +24,7 @@ router.get(
 
     const token = jwt.sign({ userId: _id, email, name }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    const redirectUrl = `https://www.clairediamonds.com?token=${token}`;
+    const redirectUrl = `https://www.clairediamonds.com?token=${token}&userId=${_id}`;
     return res.redirect(redirectUrl);
   }
 );
