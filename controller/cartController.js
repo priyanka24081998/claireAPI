@@ -1,4 +1,6 @@
 import CartItem from "../model/cartItem.js";
+import Product from "../model/productModel.js"; // Make sure this path is correct
+
 
 // ADD TO CART
 export const addToCart = async (req, res) => {
@@ -23,8 +25,41 @@ export const addToCart = async (req, res) => {
 // GET CART
 export const getCart = async (req, res) => {
   const { userId } = req.params;
-  const cart = await CartItem.find({ userId });
-  res.json(cart);
+
+  try {
+    const cart = await CartItem.find({ userId });
+
+    // Populate product details
+    const cartWithProducts = await Promise.all(
+      cart.map(async (item) => {
+        const product = await Product.findById(item.productId);
+        return {
+          _id: item._id,
+          userId: item.userId,
+          productId: item.productId,
+          quantity: item.quantity,
+          product: product
+            ? {
+                name: product.name,
+                price: product.price,
+                image: product.image, // make sure your product model has `image` field
+                metal: product.metal, // if you have metal
+              }
+            : {
+                name: "Unknown Product",
+                price: 0,
+                image: "/placeholder.png",
+                metal: "Unknown",
+              },
+        };
+      })
+    );
+
+    res.json(cartWithProducts);
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    res.status(500).json({ error: "Failed to fetch cart" });
+  }
 };
 
 // REMOVE CART ITEM
