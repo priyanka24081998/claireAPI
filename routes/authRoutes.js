@@ -24,13 +24,8 @@ router.get(
 
     const token = jwt.sign({ userId: _id, email, name }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    // Use state parameter from Google OAuth
-    const redirectUrl = req.query.state ? decodeURIComponent(req.query.state) : "https://www.clairediamonds.com";
-
-    // Append token
-    const finalUrl = `${redirectUrl}${redirectUrl.includes("?") ? "&" : "?"}token=${token}`;
-
-    return res.redirect(finalUrl);
+    const redirectUrl = `https://www.clairediamonds.com?token=${token}`;
+    return res.redirect(redirectUrl);
   }
 );
 
