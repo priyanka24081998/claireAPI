@@ -36,17 +36,22 @@ export const getFavorites = async (req, res) => {
   try {
     const { userId } = req.params;
 
+    console.log("USER ID from FE:", userId);
+
     const favs = await Favorite.find({ userId }).lean();
+    console.log("FOUND FAVORITES:", favs);
 
-    // Populate product inside each favorite
-    const populatedFavs = await Promise.all(
-      favs.map(async (fav) => {
-        const product = await Product.findById(fav.productId).lean();
-        return { ...fav, product };
-      })
-    );
+     const favorites = await Favorite.find({ userId })
+      .populate("productId") // loads product automatically
+      .lean();
 
-    res.json(populatedFavs);
+    const formatted = favorites.map(fav => ({
+      _id: fav._id,
+      productId: fav.productId._id,
+      product: fav.productId
+    }));
+
+    res.json(formatted);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch favorites" });
