@@ -72,43 +72,43 @@ exports.createProduct = async (req, res) => {
     console.log("req.body", req.body);
     console.log(process.env.CLOUDINARY_CLOUD_NAME);
 
-    const uploadedImages = await Promise.all(
-      (req.files.images || [])
-        .filter((file) => file.mimetype.startsWith("image/")) // only images
-        .map(async (file) => {
-          const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
-          console.log("Uploading image:", safePath);
+    // const uploadedImages = await Promise.all(
+    //   (req.files.images || [])
+    //     .filter((file) => file.mimetype.startsWith("image/")) // only images
+    //     .map(async (file) => {
+    //       const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
+    //       console.log("Uploading image:", safePath);
 
-          const up = await cloudinary.uploader.upload(safePath, {
-            folder: "claireimages/",
-            resource_type: "image",
-          });
+    //       const up = await cloudinary.uploader.upload(safePath, {
+    //         folder: "claireimages/",
+    //         resource_type: "image",
+    //       });
 
-          return up.secure_url;
-        })
-    );
+    //       return up.secure_url;
+    //     })
+    // );
 
-    const uploadedVideos = await Promise.all(
-      (req.files.videos || [])
-        .filter((file) => file.mimetype.startsWith("video/")) // only videos
-        .map(async (file) => {
-          const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
-          console.log("Uploading video:", safePath);
+    // const uploadedVideos = await Promise.all(
+    //   (req.files.videos || [])
+    //     .filter((file) => file.mimetype.startsWith("video/")) // only videos
+    //     .map(async (file) => {
+    //       const safePath = file.path.replace(/\\/g, "/"); // WINDOWS FIX
+    //       console.log("Uploading video:", safePath);
 
-          const up = await cloudinary.uploader.upload(safePath, {
-            folder: "claireimages/",
-            resource_type: "video",
-          });
+    //       const up = await cloudinary.uploader.upload(safePath, {
+    //         folder: "claireimages/",
+    //         resource_type: "video",
+    //       });
 
-          return {
-            url: up.secure_url,
-            public_id: up.public_id,
-          };
-        })
-    );
+    //       return {
+    //         url: up.secure_url,
+    //         public_id: up.public_id,
+    //       };
+    //     })
+    // );
 
-    req.body.images = uploadedImages;
-    req.body.videos = uploadedVideos;
+    // req.body.images = uploadedImages;
+    // req.body.videos = uploadedVideos;
 
     req.body.price = {
       "10k_yellow_gold": req.body["10k_yellow_gold"],
