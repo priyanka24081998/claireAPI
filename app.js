@@ -7,6 +7,8 @@ var logger = require('morgan');
 const session = require("express-session");
 const passport = require("passport"); // ✅ Ensure this is correct
 
+
+
 require("./config/passport");
 const authRoutes = require("./routes/authRoutes");
 require("dotenv").config();

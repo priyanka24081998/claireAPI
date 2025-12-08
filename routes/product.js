@@ -143,5 +143,6 @@ router.get("/draft/:id", async (req, res) => {
     res.status(500).json({ message: "Error fetching draft", error: err });
   }
 });
+router.post("/upload", productController.uploadCSV);
 
 module.exports = router;

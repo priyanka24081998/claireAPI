@@ -1,6 +1,12 @@
 const cloudinary = require("cloudinary").v2;
 const PM = require("../model/productModel");
+const multer = require("multer");
+const csv = require("csv-parser");
+const fs = require("fs");
 require("dotenv").config();
+
+const csvUpload = multer({ dest: "tmp/csv/" });
+
 
 // Cloudinary Config
 cloudinary.config({
@@ -9,6 +15,56 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+exports.uploadCSV = [
+  csvUpload.single("file"),
+  async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No CSV file uploaded" });
+
+    const results = [];
+    const filePath = req.file.path;
+
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (data) => {
+        // Optional: map CSV headers to your price structure if needed
+        // Example: convert CSV fields to product.price structure
+        if (data["10k_yellow_gold"]) {
+          data.price = {
+            "10k_yellow_gold": data["10k_yellow_gold"],
+            "10k_rose_gold": data["10k_rose_gold"],
+            "10k_white_gold": data["10k_white_gold"],
+            "14k_yellow_gold": data["14k_yellow_gold"],
+            "14k_rose_gold": data["14k_rose_gold"],
+            "14k_white_gold": data["14k_white_gold"],
+            "18k_yellow_gold": data["18k_yellow_gold"],
+            "18k_rose_gold": data["18k_rose_gold"],
+            "18k_white_gold": data["18k_white_gold"],
+            silver: data.silver,
+            platinum: data.platinum,
+          };
+
+          // Remove raw CSV fields
+          [
+            "10k_yellow_gold","10k_rose_gold","10k_white_gold",
+            "14k_yellow_gold","14k_rose_gold","14k_white_gold",
+            "18k_yellow_gold","18k_rose_gold","18k_white_gold",
+            "silver","platinum"
+          ].forEach(f => delete data[f]);
+        }
+
+        results.push(data);
+      })
+      .on("end", async () => {
+        try {
+          const inserted = await PM.insertMany(results);
+          fs.unlinkSync(filePath); // remove temp CSV
+          res.status(200).json({ status: "success", message: "CSV uploaded", data: inserted });
+        } catch (err) {
+          res.status(500).json({ status: "fail", message: err.message });
+        }
+      });
+  },
+];
 
 exports.createProduct = async (req, res) => {
   try {
