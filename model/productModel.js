@@ -81,6 +81,9 @@ const productSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  sidestone:{
+    type:String,
+  },
     draft: Boolean, // true for draft, false for published
 
 });
