@@ -81,6 +81,10 @@ const productSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  sku:{
+    type:String,
+    required: true,
+  },
   sidestone:{
     type:String,
   },
