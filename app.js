@@ -22,6 +22,7 @@ var userMailRouter = require('./routes/userMail');
 var sliderRouter = require('./routes/slideImgRoutes');
 var cartRoutes = require('./routes/cart');
 var favoriteRoutes = require('./routes/favorites');
+var orderRoutes = require('./routes/order')
 
 const mongoose = require('mongoose');
 const mongoURI = process.env.MONGODB_URI;
@@ -69,6 +70,9 @@ app.use('/slider',sliderRouter);
 
 app.use("/cart", cartRoutes);
 app.use("/favorites", favoriteRoutes);
+
+app.use("/api/order", orderRoutes);
+
 
 // app.use('/currency',currencyRoute);
 
