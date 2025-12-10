@@ -2,7 +2,7 @@ const Order = require("../model/orderModel");
 const fetch = require("node-fetch");
 const axios = require("axios");
 
-const PAYPAL_API_BASE = "https://sandbox.paypal.com";
+const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
 
 // Generate PayPal Access Token
 async function generateAccessToken() {
