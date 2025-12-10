@@ -71,7 +71,7 @@ app.use('/slider',sliderRouter);
 app.use("/cart", cartRoutes);
 app.use("/favorites", favoriteRoutes);
 
-app.use("/api/order", orderRoutes);
+app.use("/order", orderRoutes);
 
 
 // app.use('/currency',currencyRoute);
