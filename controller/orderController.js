@@ -28,6 +28,7 @@ async function generateAccessToken() {
 exports.createOrder = async (req, res) => {
   try {
     const { userId, products, total, shipping } = req.body;
+    // shipping = { name, address, city, state, pincode, phone, email }
 
     if (!products || products.length === 0) {
       return res.status(400).json({ error: "Cart is empty" });
@@ -37,87 +38,69 @@ exports.createOrder = async (req, res) => {
       !shipping ||
       !shipping.name ||
       !shipping.address ||
+      !shipping.city ||
+      !shipping.state ||
       !shipping.pincode ||
       !shipping.phone ||
       !shipping.email
     ) {
-      return res
-        .status(400)
-        .json({ error: "Shipping info missing or incomplete" });
+      return res.status(400).json({ error: "Shipping info missing" });
     }
 
     const accessToken = await generateAccessToken();
 
-    // Debug logs
-    console.log("Creating PayPal order...");
-    console.log("Products:", products);
-    console.log("Total:", total);
-    console.log("Shipping:", shipping);
-
-    // Build PayPal purchase_units
-    const purchaseUnits = [
-      {
-        amount: {
-          currency_code: "USD",
-          value: total.toFixed(2),
-          breakdown: {
-            item_total: { currency_code: "USD", value: total.toFixed(2) },
+    const order = await axios({
+      url: `${PAYPAL_API_BASE}/v2/checkout/orders`,
+      method: "post",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      data: {
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              currency_code: "USD",
+              value: total.toFixed(2),
+              breakdown: {
+                item_total: { currency_code: "USD", value: total.toFixed(2) },
+              },
+            },
+            items: products.map((p) => ({
+              name: p.name,
+              unit_amount: { currency_code: "USD", value: p.price.toFixed(2) },
+              quantity: p.quantity.toString(),
+              sku: `${p._id}|${p.metal}|${p.size}`,
+            })),
+            shipping: {
+              name: { full_name: shipping.name },
+              address: {
+                address_line_1: shipping.address,
+                admin_area_1: shipping.state, // State
+                admin_area_2: shipping.city,  // City
+                postal_code: shipping.pincode,
+                country_code: "US", // You can make this dynamic
+              },
+            },
           },
-        },
-        items: products.map((p) => ({
-          name: p.name,
-          unit_amount: { currency_code: "USD", value: p.price.toFixed(2) },
-          quantity: p.quantity.toString(),
-          sku: `${p._id}|${p.metal}|${p.size}`,
-        })),
-        shipping: {
-          name: { full_name: shipping.name },
-          address: {
-            address_line_1: shipping.address,
-            admin_area_2: shipping.city || "City", // Replace with actual city if available
-            admin_area_1: shipping.state || "State", // Replace with actual state if available
-            postal_code: shipping.pincode,
-            country_code: shipping.country || "US",
-          },
+        ],
+        application_context: {
+          brand_name: "Clairediamonds",
+          landing_page: "LOGIN",
+          user_action: "PAY_NOW",
+          return_url: "https://www.clairediamonds.com/payment-success",
+          cancel_url: "https://www.clairediamonds.com/payment-cancel",
         },
       },
-    ];
+    });
 
-    let order;
-    try {
-      order = await axios({
-        url: `${PAYPAL_API_BASE}/v2/checkout/orders`,
-        method: "post",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        data: {
-          intent: "CAPTURE",
-          purchase_units: purchaseUnits,
-          application_context: {
-            brand_name: "Clairediamonds",
-            landing_page: "LOGIN",
-            user_action: "PAY_NOW",
-            return_url: "https://www.clairediamonds.com/payment-success",
-            cancel_url: "https://www.clairediamonds.com/payment-cancel",
-          },
-        },
-      });
-    } catch (err) {
-      console.error("PayPal request error:", err.response?.data || err.message);
-      return res.status(500).json({
-        error: "PayPal request failed",
-        details: err.response?.data || err.message,
-      });
-    }
-
-    // Save order to DB
+    // Save order in DB
     const newOrder = new Order({
       userId,
       paypalOrderID: order.data.id,
       products: products.map((p) => ({
-        _id: p._id,
+        productId: p._id,
         name: p.name,
         metal: p.metal,
         size: p.size,
@@ -125,18 +108,16 @@ exports.createOrder = async (req, res) => {
         price: p.price,
       })),
       total,
-      shipping,
-      paypalStatus: "CREATED",
+      shipping, // Save detailed shipping including city & state
+      status: "CREATED",
     });
 
     await newOrder.save();
 
     res.json(order.data);
   } catch (error) {
-    console.error("CREATE ORDER ERROR:", error.message);
-    res
-      .status(500)
-      .json({ error: "Failed to create order", details: error.message });
+    console.error("CREATE ORDER ERROR:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Failed to create order" });
   }
 };
 
@@ -146,16 +127,13 @@ exports.captureOrder = async (req, res) => {
     const { orderID } = req.body;
     const accessToken = await generateAccessToken();
 
-    const response = await fetch(
-      `${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     const data = await response.json();
 
