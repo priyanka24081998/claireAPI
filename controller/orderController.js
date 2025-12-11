@@ -44,7 +44,7 @@ exports.createOrder = async (req, res) => {
     ) {
       return res.status(400).json({ error: "Shipping info missing" });
     }
-    
+
     const accessToken = await generateAccessToken();
 
     const order = await axios({
@@ -112,9 +112,21 @@ exports.createOrder = async (req, res) => {
 
     res.json(order.data);
   } catch (error) {
-    console.error("CREATE ORDER ERROR:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to create order" });
+  console.error("=== CREATE ORDER ERROR START ===");
+  if (error.response) {
+    console.error("PayPal response data:", error.response.data);
+    console.error("PayPal response status:", error.response.status);
+    console.error("PayPal response headers:", error.response.headers);
+  } else {
+    console.error("Error message:", error.message);
   }
+  console.error("=== CREATE ORDER ERROR END ===");
+  
+  res.status(500).json({ 
+    error: "Failed to create order", 
+    details: error.response?.data || error.message 
+  });
+}
 };
 
 // CAPTURE ORDER
