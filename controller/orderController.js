@@ -27,7 +27,16 @@ async function generateAccessToken() {
 // CREATE ORDER
 exports.createOrder = async (req, res) => {
   try {
-    const { products, total } = req.body; // products = [{_id, name, price, quantity, metal, size}]
+    const { userId, products, total, shipping } = req.body;
+    // shipping = { name, address, pincode, phone, email }
+
+    if (!products || products.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
+    }
+
+    if (!shipping) {
+      return res.status(400).json({ error: "Shipping info is required" });
+    }
 
     const accessToken = await generateAccessToken();
 
@@ -55,6 +64,14 @@ exports.createOrder = async (req, res) => {
               quantity: p.quantity.toString(),
               sku: `${p._id}|${p.metal}|${p.size}`,
             })),
+            shipping: {
+              name: { full_name: shipping.name },
+              address: {
+                address_line_1: shipping.address,
+                admin_area_2: shipping.pincode,
+                country_code: "US",
+              },
+            },
           },
         ],
         application_context: {
@@ -69,6 +86,7 @@ exports.createOrder = async (req, res) => {
 
     // Save order in DB
     const newOrder = new Order({
+      userId,
       paypalOrderID: order.data.id,
       products: products.map((p) => ({
         productId: p._id,
@@ -79,6 +97,7 @@ exports.createOrder = async (req, res) => {
         price: p.price,
       })),
       total,
+      shipping, // Save shipping info
       status: "CREATED",
     });
 
@@ -133,5 +152,16 @@ exports.getOrderDetails = async (req, res) => {
   } catch (err) {
     console.error("GET ORDER ERROR:", err.message);
     res.status(500).json({ error: "Failed to fetch order" });
+  }
+};
+
+// GET ALL ORDERS (for admin/seller)
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    console.error("GET ALL ORDERS ERROR:", err.message);
+    res.status(500).json({ error: "Failed to fetch orders" });
   }
 };
