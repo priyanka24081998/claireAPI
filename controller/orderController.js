@@ -116,9 +116,12 @@ exports.createOrder = async (req, res) => {
 
     res.json(order.data);
   } catch (error) {
-    console.error("CREATE ORDER ERROR:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to create order" });
-  }
+  console.error("CREATE ORDER ERROR:", error?.response?.data || error.message || error);
+  res.status(500).json({
+    error: "Failed to create order",
+    details: error?.response?.data || error.message || error,
+  });
+}
 };
 
 // CAPTURE ORDER
