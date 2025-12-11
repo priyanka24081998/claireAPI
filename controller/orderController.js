@@ -29,8 +29,9 @@ exports.createOrder = async (req, res) => {
   try {
     const { userId, products, total, shipping } = req.body;
 
-    if (!products || products.length === 0)
+    if (!products || products.length === 0) {
       return res.status(400).json({ error: "Cart is empty" });
+    }
 
     if (
       !shipping ||
@@ -39,60 +40,75 @@ exports.createOrder = async (req, res) => {
       !shipping.pincode ||
       !shipping.phone ||
       !shipping.email
-    )
-      return res.status(400).json({ error: "Shipping info missing" });
+    ) {
+      return res.status(400).json({ error: "Shipping info missing or incomplete" });
+    }
 
     const accessToken = await generateAccessToken();
 
-    // Prepare PayPal items
-    const paypalItems = products.map((p) => ({
-      name: p.name,
-      unit_amount: { currency_code: "USD", value: p.price.toFixed(2) },
-      quantity: p.quantity.toString(),
-      sku: `${p._id}|${p.metal}|${p.size}`,
-    }));
+    // Debug logs
+    console.log("Creating PayPal order...");
+    console.log("Products:", products);
+    console.log("Total:", total);
+    console.log("Shipping:", shipping);
 
-    // PayPal order request
-    const order = await axios({
-      url: `${PAYPAL_API_BASE}/v2/checkout/orders`,
-      method: "post",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      data: {
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            amount: {
-              currency_code: "USD",
-              value: total.toFixed(2),
-              breakdown: {
-                item_total: { currency_code: "USD", value: total.toFixed(2) },
-              },
-            },
-            items: paypalItems,
-            shipping: {
-              name: { full_name: shipping.name },
-              address: {
-                address_line_1: shipping.address,
-                admin_area_2: shipping.city || "Unknown",
-                admin_area_1: shipping.state || "Unknown",
-                postal_code: shipping.pincode,
-                country_code: "US",
-              },
-            },
+    // Build PayPal purchase_units
+    const purchaseUnits = [
+      {
+        amount: {
+          currency_code: "USD",
+          value: total.toFixed(2),
+          breakdown: {
+            item_total: { currency_code: "USD", value: total.toFixed(2) },
           },
-        ],
-        application_context: {
-          brand_name: "Clairediamonds",
-          landing_page: "LOGIN",
-          user_action: "PAY_NOW",
-          return_url: "https://www.clairediamonds.com/payment-success",
-          cancel_url: "https://www.clairediamonds.com/payment-cancel",
+        },
+        items: products.map((p) => ({
+          name: p.name,
+          unit_amount: { currency_code: "USD", value: p.price.toFixed(2) },
+          quantity: p.quantity.toString(),
+          sku: `${p._id}|${p.metal}|${p.size}`,
+        })),
+        shipping: {
+          name: { full_name: shipping.name },
+          address: {
+            address_line_1: shipping.address,
+            admin_area_2: shipping.city || "City",   // Replace with actual city if available
+            admin_area_1: shipping.state || "State", // Replace with actual state if available
+            postal_code: shipping.pincode,
+            country_code: shipping.country || "US",
+          },
         },
       },
-    });
+    ];
+
+    let order;
+    try {
+      order = await axios({
+        url: `${PAYPAL_API_BASE}/v2/checkout/orders`,
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        data: {
+          intent: "CAPTURE",
+          purchase_units: purchaseUnits,
+          application_context: {
+            brand_name: "Clairediamonds",
+            landing_page: "LOGIN",
+            user_action: "PAY_NOW",
+            return_url: "https://www.clairediamonds.com/payment-success",
+            cancel_url: "https://www.clairediamonds.com/payment-cancel",
+          },
+        },
+      });
+    } catch (err) {
+      console.error("PayPal request error:", err.response?.data || err.message);
+      return res.status(500).json({
+        error: "PayPal request failed",
+        details: err.response?.data || err.message,
+      });
+    }
 
     // Save order to DB
     const newOrder = new Order({
@@ -115,11 +131,8 @@ exports.createOrder = async (req, res) => {
 
     res.json(order.data);
   } catch (error) {
-    console.error("CREATE ORDER ERROR:", error?.response?.data || error.message);
-
-    // Return PayPal detailed error for debugging
-    const details = error?.response?.data || null;
-    res.status(500).json({ error: "Failed to create order", details });
+    console.error("CREATE ORDER ERROR:", error.message);
+    res.status(500).json({ error: "Failed to create order", details: error.message });
   }
 };
 
