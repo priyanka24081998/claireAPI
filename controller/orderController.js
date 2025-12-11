@@ -34,10 +34,17 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ error: "Cart is empty" });
     }
 
-    if (!shipping) {
-      return res.status(400).json({ error: "Shipping info is required" });
+    if (
+      !shipping ||
+      !shipping.name ||
+      !shipping.address ||
+      !shipping.pincode ||
+      !shipping.phone ||
+      !shipping.email
+    ) {
+      return res.status(400).json({ error: "Shipping info missing" });
     }
-
+    
     const accessToken = await generateAccessToken();
 
     const order = await axios({
