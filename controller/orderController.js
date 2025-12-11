@@ -185,3 +185,14 @@ exports.getAllOrders = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 };
+// GET ORDERS FOR SPECIFIC USER
+exports.getUserOrders = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    console.error("GET USER ORDERS ERROR:", err.message);
+    res.status(500).json({ error: "Failed to fetch user orders" });
+  }
+};

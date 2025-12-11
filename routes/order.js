@@ -13,5 +13,7 @@ router.get("/order/:orderID", orderController.getOrderDetails);
 
 // Optional: Get all orders (for admin/seller)
 router.get("/all-orders", orderController.getAllOrders);
+router.get("/user-orders/:userId", orderController.getUserOrders);
+
 
 module.exports = router;
