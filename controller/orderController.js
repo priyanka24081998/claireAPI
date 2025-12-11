@@ -78,7 +78,7 @@ exports.createOrder = async (req, res) => {
               address: {
                 address_line_1: shipping.address,
                 admin_area_1: shipping.state, // State
-                admin_area_2: shipping.city,  // City
+                admin_area_2: shipping.city, // City
                 postal_code: shipping.pincode,
                 country_code: "US", // You can make this dynamic
               },
@@ -100,7 +100,7 @@ exports.createOrder = async (req, res) => {
       userId,
       paypalOrderID: order.data.id,
       products: products.map((p) => ({
-        productId: p._id,
+        _id: p._id, // <--- add this
         name: p.name,
         metal: p.metal,
         size: p.size,
@@ -116,12 +116,15 @@ exports.createOrder = async (req, res) => {
 
     res.json(order.data);
   } catch (error) {
-  console.error("CREATE ORDER ERROR:", error?.response?.data || error.message || error);
-  res.status(500).json({
-    error: "Failed to create order",
-    details: error?.response?.data || error.message || error,
-  });
-}
+    console.error(
+      "CREATE ORDER ERROR:",
+      error?.response?.data || error.message || error
+    );
+    res.status(500).json({
+      error: "Failed to create order",
+      details: error?.response?.data || error.message || error,
+    });
+  }
 };
 
 // CAPTURE ORDER
@@ -130,13 +133,16 @@ exports.captureOrder = async (req, res) => {
     const { orderID } = req.body;
     const accessToken = await generateAccessToken();
 
-    const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await fetch(
+      `${PAYPAL_API_BASE}/v2/checkout/orders/${orderID}/capture`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     const data = await response.json();
 
