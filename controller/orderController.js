@@ -28,11 +28,9 @@ async function generateAccessToken() {
 exports.createOrder = async (req, res) => {
   try {
     const { userId, products, total, shipping } = req.body;
-    // shipping = { name, address, pincode, phone, email }
 
-    if (!products || products.length === 0) {
+    if (!products || products.length === 0)
       return res.status(400).json({ error: "Cart is empty" });
-    }
 
     if (
       !shipping ||
@@ -41,12 +39,20 @@ exports.createOrder = async (req, res) => {
       !shipping.pincode ||
       !shipping.phone ||
       !shipping.email
-    ) {
+    )
       return res.status(400).json({ error: "Shipping info missing" });
-    }
 
     const accessToken = await generateAccessToken();
 
+    // Prepare PayPal items
+    const paypalItems = products.map((p) => ({
+      name: p.name,
+      unit_amount: { currency_code: "USD", value: p.price.toFixed(2) },
+      quantity: p.quantity.toString(),
+      sku: `${p._id}|${p.metal}|${p.size}`,
+    }));
+
+    // PayPal order request
     const order = await axios({
       url: `${PAYPAL_API_BASE}/v2/checkout/orders`,
       method: "post",
@@ -65,17 +71,14 @@ exports.createOrder = async (req, res) => {
                 item_total: { currency_code: "USD", value: total.toFixed(2) },
               },
             },
-            items: products.map((p) => ({
-              name: p.name,
-              unit_amount: { currency_code: "USD", value: p.price.toFixed(2) },
-              quantity: p.quantity.toString(),
-              sku: `${p._id}|${p.metal}|${p.size}`,
-            })),
+            items: paypalItems,
             shipping: {
               name: { full_name: shipping.name },
               address: {
                 address_line_1: shipping.address,
-                admin_area_2: shipping.pincode,
+                admin_area_2: shipping.city || "Unknown",
+                admin_area_1: shipping.state || "Unknown",
+                postal_code: shipping.pincode,
                 country_code: "US",
               },
             },
@@ -91,7 +94,7 @@ exports.createOrder = async (req, res) => {
       },
     });
 
-    // Save order in DB
+    // Save order to DB
     const newOrder = new Order({
       userId,
       paypalOrderID: order.data.id,
@@ -104,7 +107,7 @@ exports.createOrder = async (req, res) => {
         price: p.price,
       })),
       total,
-      shipping, // Save shipping info
+      shipping,
       status: "CREATED",
     });
 
@@ -112,22 +115,14 @@ exports.createOrder = async (req, res) => {
 
     res.json(order.data);
   } catch (error) {
-  console.error("=== CREATE ORDER ERROR START ===");
-  if (error.response) {
-    console.error("PayPal response data:", error.response.data);
-    console.error("PayPal response status:", error.response.status);
-    console.error("PayPal response headers:", error.response.headers);
-  } else {
-    console.error("Error message:", error.message);
+    console.error("CREATE ORDER ERROR:", error?.response?.data || error.message);
+
+    // Return PayPal detailed error for debugging
+    const details = error?.response?.data || null;
+    res.status(500).json({ error: "Failed to create order", details });
   }
-  console.error("=== CREATE ORDER ERROR END ===");
-  
-  res.status(500).json({ 
-    error: "Failed to create order", 
-    details: error.response?.data || error.message 
-  });
-}
 };
+
 
 // CAPTURE ORDER
 exports.captureOrder = async (req, res) => {
